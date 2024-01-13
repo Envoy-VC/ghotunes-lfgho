@@ -2,6 +2,7 @@
 
 import { WagmiConfig, createConfig } from 'wagmi';
 import { ConnectKitProvider, getDefaultConfig } from 'connectkit';
+import { sepolia } from 'wagmi/chains';
 
 import { env } from '~/env';
 
@@ -9,6 +10,7 @@ const config = createConfig(
 	getDefaultConfig({
 		alchemyId: env.NEXT_PUBLIC_ALCHEMY_KEY,
 		walletConnectProjectId: env.NEXT_PUBLIC_WALLETCONNECT_ID,
+		chains: [sepolia],
 		appName: 'GHOTUNES',
 		appDescription: 'Your App Description',
 		appUrl: 'https://family.co',
