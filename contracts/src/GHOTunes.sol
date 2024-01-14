@@ -6,16 +6,48 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import { AccountRegistry } from "./accounts/AccountRegistry.sol";
+import { Account } from "./accounts/Account.sol";
+
 contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     uint256 private _nextTokenId;
+    AccountRegistry public accountRegistry;
+    address public implementation;
 
-    constructor(address initialOwner) ERC721("GHO Tunes", "TUNES") Ownable(initialOwner) { }
+    mapping(address => address) public accounts;
 
-    // TODO: depositAndPay
-    function safeMint(address to, string memory uri) public onlyOwner {
+    constructor(
+        address initialOwner,
+        address _accountRegistry,
+        address _implementation
+    )
+        ERC721("GHO Tunes", "TUNES")
+        Ownable(initialOwner)
+    {
+        accountRegistry = AccountRegistry(_accountRegistry);
+        implementation = _implementation;
+    }
+
+    function depositAndPay() public payable {
+        // TODO: Add checks
+
+        // Mint NFT to user.
         uint256 tokenId = _nextTokenId++;
-        _safeMint(to, tokenId);
+        string memory uri = "";
+        uint256 salt = 1;
+        _safeMint(msg.sender, tokenId);
         _setTokenURI(tokenId, uri);
+
+        // Create ERC6551 Account
+        accountRegistry.createAccount(implementation, block.chainid, address(this), tokenId, salt, "");
+        address accountAddress = accountRegistry.account(implementation, block.chainid, address(this), tokenId, salt);
+        accounts[msg.sender] = accountAddress;
+
+        // send ether to account
+        (bool success,) = accountAddress.call{ value: msg.value }("");
+        require(success, "GHOTunes: Failed to send ether to account");
+
+        // TODO: Deposit Ether to Aave and credit delegate GHO Tokens.
     }
 
     // The following functions are overrides required by Solidity.
