@@ -6,8 +6,12 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+// ERC-6551 Token Bound Accounts
 import { AccountRegistry } from "./accounts/AccountRegistry.sol";
 import { Account } from "./accounts/Account.sol";
+
+// Aave V3 Contracts
+import { AaveV3Sepolia } from "aave-address-book/AaveV3Sepolia.sol";
 
 contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     uint256 private _nextTokenId;
