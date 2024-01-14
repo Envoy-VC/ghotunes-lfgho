@@ -8,10 +8,18 @@ import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "../interfaces/IERC6551Account.sol";
 import "../interfaces/IERC6551Executable.sol";
 
+// Aave V3
+import { AaveV3Sepolia } from "aave-address-book/AaveV3Sepolia.sol";
+
 contract Account is IERC165, IERC1271, IERC6551Account, IERC6551Executable {
     uint256 public state;
+    address public ghoTunes;
 
     receive() external payable { }
+
+    constructor() {
+        address pool = AaveV3Sepolia.POOL;
+    }
 
     function execute(
         address to,

@@ -32,26 +32,31 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
         implementation = _implementation;
     }
 
-    function depositAndPay() public payable {
+    function depositAndSubscribe(address to) public payable {
+        require(accounts[to] == address(0), "GHOTunes: Account already exists");
         // TODO: Add checks
 
         // Mint NFT to user.
         uint256 tokenId = _nextTokenId++;
-        string memory uri = "";
+        string memory uri = _buildURI(tokenId);
         uint256 salt = 1;
-        _safeMint(msg.sender, tokenId);
+        _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
 
         // Create ERC6551 Account
         accountRegistry.createAccount(implementation, block.chainid, address(this), tokenId, salt, "");
         address accountAddress = accountRegistry.account(implementation, block.chainid, address(this), tokenId, salt);
-        accounts[msg.sender] = accountAddress;
+        accounts[to] = accountAddress;
 
         // send ether to account
         (bool success,) = accountAddress.call{ value: msg.value }("");
         require(success, "GHOTunes: Failed to send ether to account");
 
         // TODO: Deposit Ether to Aave and credit delegate GHO Tokens.
+    }
+
+    function _buildURI(uint256 tokenId) internal view returns (string memory) {
+        return string(abi.encodePacked("{" "name: GHO Tunes ", tokenId, ",", "description: GHO Tunes"));
     }
 
     // The following functions are overrides required by Solidity.
