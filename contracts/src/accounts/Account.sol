@@ -9,16 +9,20 @@ import "../interfaces/IERC6551Account.sol";
 import "../interfaces/IERC6551Executable.sol";
 
 // Aave V3
+import { IPool } from "@aave/core-v3/contracts/interfaces/IPool.sol";
+import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 import { AaveV3Sepolia } from "aave-address-book/AaveV3Sepolia.sol";
 
 contract Account is IERC165, IERC1271, IERC6551Account, IERC6551Executable {
     uint256 public state;
-    address public ghoTunes;
+    IPoolAddressesProvider public aaveAddressesProvider;
+    IPool public aavePool;
 
     receive() external payable { }
 
     constructor() {
-        address pool = AaveV3Sepolia.POOL;
+        aaveAddressesProvider = IPoolAddressesProvider(address(AaveV3Sepolia.POOL_ADDRESSES_PROVIDER));
+        aavePool = IPool(aaveAddressesProvider.getPool());
     }
 
     function execute(

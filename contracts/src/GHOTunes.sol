@@ -11,12 +11,21 @@ import { AccountRegistry } from "./accounts/AccountRegistry.sol";
 import { Account } from "./accounts/Account.sol";
 
 // Aave V3 Contracts
-import { AaveV3Sepolia } from "aave-address-book/AaveV3Sepolia.sol";
+import { AaveV3Ethereum } from "aave-address-book/AaveV3Ethereum.sol";
+import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+import { IPriceOracle } from "@aave/core-v3/contracts/interfaces/IPriceOracle.sol";
+import { IPoolDataProvider } from "@aave/core-v3/contracts/interfaces/IPoolDataProvider.sol";
 
 contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     uint256 private _nextTokenId;
     AccountRegistry public accountRegistry;
+    IPoolAddressesProvider public aaveAddressesProvider;
+    IPriceOracle public priceOracle;
+    IPoolDataProvider public poolDataProvider;
     address public implementation;
+    address public constant GHO_TOKEN = 0xc4bF5CbDaBE595361438F8c6a187bDc330539c60;
+
+    uint256 public constant PRICE = 1_000_000 gwei;
 
     mapping(address => address) public accounts;
 
@@ -28,12 +37,24 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
         ERC721("GHO Tunes", "TUNES")
         Ownable(initialOwner)
     {
+        aaveAddressesProvider = IPoolAddressesProvider(address(AaveV3Ethereum.POOL_ADDRESSES_PROVIDER));
+        priceOracle = IPriceOracle(aaveAddressesProvider.getPriceOracle());
+        poolDataProvider = IPoolDataProvider(aaveAddressesProvider.getPoolDataProvider());
         accountRegistry = AccountRegistry(_accountRegistry);
         implementation = _implementation;
     }
 
+    function get() public view returns (uint256) {
+        (uint256 ltv,,,,,,,,,) = poolDataProvider.getReserveConfigurationData(GHO_TOKEN);
+        uint256 canBorrow = 1 ether * priceOracle.getAssetPrice(GHO_TOKEN) * ltv / 1e18;
+        return canBorrow;
+    }
+
     function depositAndSubscribe(address to) public payable {
         require(accounts[to] == address(0), "GHOTunes: Account already exists");
+        (uint256 ltv,,,,,,,,,) = poolDataProvider.getReserveConfigurationData(GHO_TOKEN);
+        uint256 canBorrow = msg.value * priceOracle.getAssetPrice(GHO_TOKEN) * ltv / 1e18;
+        require(canBorrow > PRICE, "GHOTunes: Not enough collateral to borrow");
         // TODO: Add checks
 
         // Mint NFT to user.
