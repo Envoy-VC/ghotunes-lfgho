@@ -11,13 +11,13 @@ import "../interfaces/IERC6551Executable.sol";
 // Aave V3
 import { IPool } from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
-import { AaveV3Ethereum } from "aave-address-book/AaveV3Ethereum.sol";
+import { AaveV3Sepolia } from "aave-address-book/AaveV3Sepolia.sol";
 
 contract GHOTunesAccount is IERC165, IERC1271, IERC6551Account, IERC6551Executable {
     uint256 public state;
     IPoolAddressesProvider public aaveAddressesProvider =
-        IPoolAddressesProvider(address(AaveV3Ethereum.POOL_ADDRESSES_PROVIDER));
-    IPool public aavePool = IPool(address(AaveV3Ethereum.POOL));
+        IPoolAddressesProvider(address(AaveV3Sepolia.POOL_ADDRESSES_PROVIDER));
+    IPool public aavePool = IPool(address(AaveV3Sepolia.POOL));
 
     receive() external payable { }
 
