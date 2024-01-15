@@ -1,10 +1,12 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.8.23 <0.9.0;
 
+// Testing
 import { Test } from "forge-std/src/Test.sol";
 import { VmSafe } from "forge-std/src/Vm.sol";
 import { console2 } from "forge-std/src/console2.sol";
 
+// Contracts
 import { GHOTunes } from "../src/GHOTunes.sol";
 import { SigUtils } from "../src/utils/SigUtils.sol";
 import { AccountRegistry } from "../src/accounts/AccountRegistry.sol";
@@ -14,9 +16,6 @@ import { GHOTunesAccount } from "../src/accounts/Account.sol";
 import { IPool } from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import { AaveV3Sepolia, AaveV3SepoliaAssets } from "aave-address-book/AaveV3Sepolia.sol";
 import { DebtTokenBase } from "@aave/core-v3/contracts/protocol/tokenization/base/DebtTokenBase.sol";
-
-// Libraries
-import { AaveV3SepoliaGHOAssets } from "../src/lib/AaveV3SepoliaGHO.sol";
 
 contract GHOTunesTest is Test {
     uint256 mainnetFork;
@@ -50,7 +49,7 @@ contract GHOTunesTest is Test {
         accountRegistry = new AccountRegistry();
         implementation = new GHOTunesAccount();
         vWETH = DebtTokenBase(AaveV3SepoliaAssets.WETH_V_TOKEN);
-        vGHO = DebtTokenBase(AaveV3SepoliaGHOAssets.GHO_V_TOKEN);
+        vGHO = DebtTokenBase(AaveV3SepoliaAssets.GHO_V_TOKEN);
 
         GHOTunes.TIER[] memory tiers = new GHOTunes.TIER[](3);
         tiers[0] = GHOTunes.TIER({ price: 0 ether }); // Free
