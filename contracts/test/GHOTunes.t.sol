@@ -22,8 +22,6 @@ contract GHOTunesTest is Test {
     GHOTunes public tunes;
     AccountRegistry public accountRegistry;
     GHOTunesAccount public implementation;
-    SigUtils internal sigUtils;
-    SigUtils internal sigUtils2;
 
     DebtTokenBase public vWETH;
     DebtTokenBase public vGHO;
@@ -58,9 +56,6 @@ contract GHOTunesTest is Test {
 
         tunes = new GHOTunes(owner.addr, address(accountRegistry), address(implementation), tiers);
 
-        sigUtils = new SigUtils(vWETH.DOMAIN_SEPARATOR());
-        sigUtils2 = new SigUtils(vGHO.DOMAIN_SEPARATOR());
-
         vm.stopPrank();
     }
 
@@ -68,38 +63,46 @@ contract GHOTunesTest is Test {
         vm.startPrank(user1.addr);
         vm.deal(user1.addr, 100 ether);
 
+        uint256 DURATION_IN_MONTHS = 12;
         uint256 ethRequired = tunes.calculateETHRequired(1);
         console2.log("ETH Required: ", ethRequired);
-
-        // Generate Permit
-        address spender = address(AaveV3Sepolia.WETH_GATEWAY);
-        uint256 nonce = vWETH.nonces(user1.addr);
         uint256 deadline = block.timestamp + 1 days;
-        SigUtils.Permit memory permit = SigUtils.Permit({
-            owner: user1.addr,
-            spender: spender,
-            value: ethRequired,
-            nonce: nonce,
-            deadline: deadline
-        });
+
+        GHOTunes.Signature memory wETHPermit =
+            generatePermitSignature(vWETH, user1.addr, address(AaveV3Sepolia.WETH_GATEWAY), ethRequired);
+
+        uint256 amount = tunes.tiers(1);
+        console2.log("Amount: ", amount);
+        GHOTunes.Signature memory ghoPermit =
+            generatePermitSignature(vGHO, user1.addr, address(tunes), amount * DURATION_IN_MONTHS);
+
+        tunes.depositAndSubscribe{ value: ethRequired }(
+            user1.addr, 1, DURATION_IN_MONTHS, deadline, wETHPermit, ghoPermit
+        );
+        vm.stopPrank();
+    }
+
+    function generatePermitSignature(
+        DebtTokenBase token,
+        address delegator,
+        address delegatee,
+        uint256 value
+    )
+        public
+        returns (GHOTunes.Signature memory)
+    {
+        SigUtils sigUtils = new SigUtils(token.DOMAIN_SEPARATOR(), token.DELEGATION_WITH_SIG_TYPEHASH());
+        uint256 nonce = token.nonces(delegator);
+        uint256 deadline = block.timestamp + 1 days;
+
+        SigUtils.Permit memory permit =
+            SigUtils.Permit({ owner: delegator, spender: delegatee, value: value, nonce: nonce, deadline: deadline });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(user1.privateKey, digest);
+        GHOTunes.Signature memory sig = GHOTunes.Signature({ v: v, r: r, s: s });
 
-        uint256 amount = 5 ether;
-
-        // Generate Permit 2
-        address spender1 = address(tunes);
-        uint256 nonce1 = vGHO.nonces(user1.addr);
-        SigUtils.Permit memory permit1 =
-            SigUtils.Permit({ owner: user1.addr, spender: spender1, value: amount, nonce: nonce1, deadline: deadline });
-
-        bytes32 digest1 = sigUtils2.getTypedDataHash(permit1);
-
-        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(user1.privateKey, digest1);
-
-        tunes.depositAndSubscribe{ value: ethRequired }(user1.addr, 1, deadline, v, r, s, v1, r1, s1);
-        vm.stopPrank();
+        return sig;
     }
 }

@@ -23,6 +23,9 @@ import { IVariableDebtToken } from "@aave/core-v3/contracts/interfaces/IVariable
 import { DebtTokenBase } from "@aave/core-v3/contracts/protocol/tokenization/base/DebtTokenBase.sol";
 import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 
+// Interfaces
+import { IGhoToken } from "./interfaces/IGhoToken.sol";
+
 contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     uint256 private _nextTokenId;
     AccountRegistry public accountRegistry;
@@ -32,6 +35,7 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     IPool public aavePool;
     IWrappedTokenGatewayV3 public wEthGateway;
     IAToken public aWETH;
+    IGhoToken public ghoToken;
 
     address public implementation;
 
@@ -44,6 +48,12 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     struct TIER {
         // Price in GHO Token
         uint256 price;
+    }
+
+    struct Signature {
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
     }
 
     constructor(
@@ -62,6 +72,7 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
         aavePool = IPool(address(AaveV3Sepolia.POOL));
         wEthGateway = IWrappedTokenGatewayV3(AaveV3Sepolia.WETH_GATEWAY);
         aWETH = IAToken(address(AaveV3SepoliaAssets.WETH_A_TOKEN));
+        ghoToken = IGhoToken(address(AaveV3SepoliaAssets.GHO_UNDERLYING));
         implementation = _implementation;
 
         uint256 len = _tiers.length;
@@ -86,13 +97,10 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     function depositAndSubscribe(
         address user,
         uint256 tier,
+        uint256 durationInMonths,
         uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s,
-        uint8 v1,
-        bytes32 r1,
-        bytes32 s1
+        Signature memory wETHPermit,
+        Signature memory ghoPermit
     )
         public
         payable
@@ -100,6 +108,9 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
         require(accounts[user] == address(0), "GHOTunes: Account already exists");
         require(tier < totalTiers, "GHOTunes: Invalid Tier");
         require(msg.value >= calculateETHRequired(tier), "GHOTunes: Insufficient ETH");
+        require(block.timestamp <= deadline, "GHOTunes: Invalid Expiration");
+        require(durationInMonths > 0, "GHOTunes: Invalid Duration");
+
         uint256 value = msg.value;
         uint256 amount = tiers[tier].price;
 
@@ -120,7 +131,7 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
         // Supply Aave
         wEthGateway.depositETH{ value: value }(address(aavePool), user, 0);
         DebtTokenBase(AaveV3SepoliaAssets.WETH_V_TOKEN).delegationWithSig(
-            user, address(wEthGateway), value, deadline, v, r, s
+            user, address(wEthGateway), value, deadline, wETHPermit.v, wETHPermit.r, wETHPermit.s
         );
         getABalance(user);
         getUserData(user);
@@ -128,12 +139,12 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
         // Borrow GHO
         console2.log("Borrow GHO: ", amount);
         DebtTokenBase(AaveV3SepoliaAssets.GHO_V_TOKEN).delegationWithSig(
-            user, address(this), amount, deadline, v1, r1, s1
+            user, address(this), durationInMonths * amount, deadline, ghoPermit.v, ghoPermit.r, ghoPermit.s
         );
-        aavePool.borrow(AaveV3SepoliaAssets.GHO_UNDERLYING, amount, 2, 0, user);
+        aavePool.borrow(address(ghoToken), amount, 2, 0, user);
 
         // log balance of gho
-        uint256 balance = IAToken(AaveV3SepoliaAssets.GHO_UNDERLYING).balanceOf(address(this));
+        uint256 balance = ghoToken.balanceOf(address(this));
         console2.log("Balance GHO: ", balance);
     }
 

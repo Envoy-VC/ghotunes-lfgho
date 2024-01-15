@@ -1,3 +1,5 @@
 @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
 @prb/test/=node_modules/@prb/test/
 forge-std/=lib/forge-std/
+aave-address-book/=lib/aave-address-book/src/
+@aave/core-v3/=lib/aave-address-book/lib/aave-v3-core/
