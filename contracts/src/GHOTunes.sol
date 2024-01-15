@@ -13,10 +13,18 @@ import { AccountRegistry } from "./accounts/AccountRegistry.sol";
 import { GHOTunesAccount } from "./accounts/Account.sol";
 
 // Aave V3 Contracts
-import { AaveV3Sepolia, AaveV3SepoliaAssets } from "aave-address-book/AaveV3Sepolia.sol";
-import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+import { IPool } from "@aave/core-v3/contracts/interfaces/IPool.sol";
+import { IAToken } from "@aave/core-v3/contracts/interfaces/IAToken.sol";
+import { IWrappedTokenGatewayV3 } from "./interfaces/IWrappedTokenGatewayV3.sol";
 import { IPriceOracle } from "@aave/core-v3/contracts/interfaces/IPriceOracle.sol";
+import { AaveV3Sepolia, AaveV3SepoliaAssets } from "aave-address-book/AaveV3Sepolia.sol";
 import { IPoolDataProvider } from "@aave/core-v3/contracts/interfaces/IPoolDataProvider.sol";
+import { IVariableDebtToken } from "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
+import { DebtTokenBase } from "@aave/core-v3/contracts/protocol/tokenization/base/DebtTokenBase.sol";
+import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+
+// Libraries
+import { AaveV3SepoliaGHOAssets } from "./lib/AaveV3SepoliaGHO.sol";
 
 contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     uint256 private _nextTokenId;
@@ -24,11 +32,14 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     IPoolAddressesProvider public aaveAddressesProvider;
     IPriceOracle public priceOracle;
     IPoolDataProvider public poolDataProvider;
+    IPool public aavePool;
+    IWrappedTokenGatewayV3 public wEthGateway;
+    IAToken public aWETH = IAToken(address(AaveV3SepoliaAssets.WETH_A_TOKEN));
+
     address public implementation;
-    address public constant GHO_TOKEN = 0xc4bF5CbDaBE595361438F8c6a187bDc330539c60;
+    address WETH_UNDERLYING = address(AaveV3SepoliaAssets.WETH_UNDERLYING);
 
     uint256 public constant GHO_PRICE_USD = 1e8;
-    uint256 public constant PRICE = 1e18 * 10; // 10 GHO
 
     mapping(address => address) public accounts;
     uint256 public totalTiers;
@@ -52,6 +63,8 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
         priceOracle = IPriceOracle(aaveAddressesProvider.getPriceOracle());
         poolDataProvider = IPoolDataProvider(aaveAddressesProvider.getPoolDataProvider());
         accountRegistry = AccountRegistry(_accountRegistry);
+        aavePool = IPool(address(AaveV3Sepolia.POOL));
+        wEthGateway = IWrappedTokenGatewayV3(AaveV3Sepolia.WETH_GATEWAY);
         implementation = _implementation;
 
         uint256 len = _tiers.length;
@@ -67,17 +80,31 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     function calculateETHRequired(uint256 _tier) public view returns (uint256) {
         TIER memory tier = tiers[_tier];
         uint256 tierPrice = tier.price;
-        address asset = address(AaveV3SepoliaAssets.WETH_UNDERLYING);
-        uint256 assetPrice = priceOracle.getAssetPrice(asset);
-        (, uint256 ltv,,,,,,,,) = poolDataProvider.getReserveConfigurationData(asset);
+        uint256 assetPrice = priceOracle.getAssetPrice(WETH_UNDERLYING);
+        (, uint256 ltv,,,,,,,,) = poolDataProvider.getReserveConfigurationData(WETH_UNDERLYING);
         uint256 ethRequired = (tierPrice * GHO_PRICE_USD * 1e4) / (ltv * assetPrice);
         return ethRequired;
     }
 
-    function depositAndSubscribe(address user, uint256 tier) public payable {
+    function depositAndSubscribe(
+        address user,
+        uint256 tier,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        uint8 v1,
+        bytes32 r1,
+        bytes32 s1
+    )
+        public
+        payable
+    {
         require(accounts[user] == address(0), "GHOTunes: Account already exists");
-        require(tier <= totalTiers, "GHOTunes: Invalid Tier");
+        require(tier < totalTiers, "GHOTunes: Invalid Tier");
         require(msg.value >= calculateETHRequired(tier), "GHOTunes: Insufficient ETH");
+        uint256 value = msg.value;
+        uint256 amount = tiers[tier].price;
 
         // Mint NFT to user.
         uint256 tokenId = _nextTokenId++;
@@ -93,15 +120,47 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
         console2.log("Created ERC-6551 Account: ", accountAddress);
         accounts[user] = accountAddress;
 
-        // send ether to account
-        (bool success,) = accountAddress.call{ value: msg.value }("");
-        require(success, "GHOTunes: Failed to send ether to account");
+        // Supply Aave
+        wEthGateway.depositETH{ value: value }(address(aavePool), user, 0);
+        DebtTokenBase(AaveV3SepoliaAssets.WETH_V_TOKEN).delegationWithSig(
+            user, address(wEthGateway), value, deadline, v, r, s
+        );
+        getABalance(user);
+        getUserData(user);
 
-        // get balance of accountAddress
-        uint256 balance = address(accountAddress).balance;
-        console2.log("Account Balance: ", balance / 1e18, "ETH");
+        // Borrow GHO
+        console2.log("Borrow GHO: ", amount);
+        DebtTokenBase(AaveV3SepoliaGHOAssets.GHO_V_TOKEN).delegationWithSig(
+            user, address(this), amount, deadline, v1, r1, s1
+        );
+        aavePool.borrow(AaveV3SepoliaGHOAssets.GHO_TOKEN, amount, 2, 0, user);
 
-        // TODO: Deposit Ether to Aave and credit delegate GHO Tokens.
+        // log balance of gho
+        uint256 balance = IAToken(AaveV3SepoliaGHOAssets.GHO_TOKEN).balanceOf(address(this));
+        console2.log("Balance GHO: ", balance);
+    }
+
+    function getUserData(address user) public view {
+        (
+            uint256 totalCollateralBase,
+            uint256 totalDebtBase,
+            uint256 availableBorrowsBase,
+            uint256 currentLiquidationThreshold,
+            uint256 ltv,
+            uint256 healthFactor
+        ) = aavePool.getUserAccountData(user);
+        console2.log("Total Collateral Base: ", totalCollateralBase);
+        console2.log("Total Debt Base: ", totalDebtBase);
+        console2.log("Available Borrows Base: ", availableBorrowsBase);
+        console2.log("Current Liquidation Threshold: ", currentLiquidationThreshold);
+        console2.log("LTV: ", ltv);
+        console2.log("Health Factor: ", healthFactor);
+    }
+
+    function getABalance(address user) public view returns (uint256) {
+        uint256 balance = IAToken(AaveV3SepoliaAssets.WETH_A_TOKEN).balanceOf(user);
+        console2.log("Balance aWETH: ", balance);
+        return balance;
     }
 
     function _buildURI(uint256 tokenId) internal pure returns (string memory) {
