@@ -10,3 +10,6 @@
 [submodule "contracts/lib/gho-core"]
 	path = contracts/lib/gho-core
 	url = https://github.com/aave/gho-core
+[submodule "contracts/lib/foundry-chainlink-toolkit"]
+	path = contracts/lib/foundry-chainlink-toolkit
+	url = https://github.com/smartcontractkit/foundry-chainlink-toolkit
