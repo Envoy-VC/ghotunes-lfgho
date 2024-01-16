@@ -68,7 +68,6 @@ contract GHOTunesTest is Test {
         uint256 DURATION_IN_MONTHS = 12;
         uint256 ethRequired = tunes.calculateETHRequired(1);
         console2.log("ETH Required: ", ethRequired);
-        uint256 deadline = block.timestamp + 1 days;
 
         GHOTunes.Signature memory wETHPermit =
             generatePermitSignature(vWETH, user1.addr, address(AaveV3Sepolia.WETH_GATEWAY), ethRequired);
@@ -78,9 +77,7 @@ contract GHOTunesTest is Test {
         GHOTunes.Signature memory ghoPermit =
             generatePermitSignature(vGHO, user1.addr, address(tunes), amount * DURATION_IN_MONTHS);
 
-        tunes.depositAndSubscribe{ value: ethRequired }(
-            user1.addr, 1, DURATION_IN_MONTHS, deadline, wETHPermit, ghoPermit
-        );
+        tunes.subscribeWithETH{ value: ethRequired }(user1.addr, 1, DURATION_IN_MONTHS, wETHPermit, ghoPermit);
         vm.stopPrank();
     }
 
@@ -103,7 +100,7 @@ contract GHOTunesTest is Test {
         bytes32 digest = sigUtils.getTypedDataHash(permit);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(user1.privateKey, digest);
-        GHOTunes.Signature memory sig = IGhoTunes.Signature({ v: v, r: r, s: s });
+        GHOTunes.Signature memory sig = IGhoTunes.Signature({ deadline: deadline, v: v, r: r, s: s });
 
         return sig;
     }

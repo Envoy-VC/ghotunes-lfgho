@@ -15,6 +15,7 @@ import { IWrappedTokenGatewayV3 } from "../interfaces/IWrappedTokenGatewayV3.sol
 import { IPriceOracle } from "@aave/core-v3/contracts/interfaces/IPriceOracle.sol";
 import { AaveV3Sepolia, AaveV3SepoliaAssets } from "aave-address-book/AaveV3Sepolia.sol";
 import { IPoolDataProvider } from "@aave/core-v3/contracts/interfaces/IPoolDataProvider.sol";
+import { DebtTokenBase } from "@aave/core-v3/contracts/protocol/tokenization/base/DebtTokenBase.sol";
 import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 
 // Interfaces
@@ -43,8 +44,12 @@ abstract contract GHOTunesBase is IGhoTunes {
     // Aave V3 aWETH Token
     IAToken public aWETH = IAToken(address(AaveV3SepoliaAssets.WETH_A_TOKEN));
 
+    DebtTokenBase public vWETH = DebtTokenBase(AaveV3SepoliaAssets.WETH_V_TOKEN);
+
     // Aave V3 GHO Token
     IGhoToken public ghoToken = IGhoToken(address(AaveV3SepoliaAssets.GHO_UNDERLYING));
+
+    DebtTokenBase public vGHO = DebtTokenBase(AaveV3SepoliaAssets.GHO_V_TOKEN);
 
     // ERC-6551 Token Bound Account Implementation
     address public implementation;
@@ -56,7 +61,7 @@ abstract contract GHOTunesBase is IGhoTunes {
     AccountRegistry public accountRegistry;
 
     // Mapping of Token ID to Account Address
-    mapping(address => address) public accounts;
+    mapping(address => User) public accounts;
 
     // Tiers of GHO Tunes
     uint256 public totalTiers;
@@ -95,5 +100,10 @@ abstract contract GHOTunesBase is IGhoTunes {
             "}"
         );
         return string(abi.encodePacked("data:application/json;base64,", Base64.encode(dataURI)));
+    }
+
+    function borrowGHO(address onBehalfOf, uint256 amount) internal {
+        require(vGHO.borrowAllowance(onBehalfOf, address(this)) >= amount, "GHOTunes: Insufficient GHO Delegated");
+        aavePool.borrow(address(ghoToken), amount, 2, 0, onBehalfOf);
     }
 }

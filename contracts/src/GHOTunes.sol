@@ -49,27 +49,11 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         }
     }
 
-    function depositAndSubscribe(
-        address user,
-        uint8 tier,
-        uint256 durationInMonths,
-        uint256 deadline,
-        Signature memory wETHPermit,
-        Signature memory ghoPermit
-    )
-        external
-        payable
-    {
-        require(accounts[user] == address(0), "GHOTunes: Account already exists");
+    function createAccount(address user, uint8 tier) internal {
+        require(accounts[user].accountAddress == address(0), "GHOTunes: Account already exists");
         require(tier < totalTiers, "GHOTunes: Invalid Tier");
-        require(msg.value >= calculateETHRequired(tier), "GHOTunes: Insufficient ETH");
-        require(block.timestamp <= deadline, "GHOTunes: Invalid Expiration");
-        require(durationInMonths > 0, "GHOTunes: Invalid Duration");
 
-        uint256 value = msg.value;
-        uint256 amount = tiers[tier].price;
-
-        // Mint NFT to user.
+        // Mint NFT
         uint256 tokenId = _nextTokenId++;
         string memory uri = _buildURI(tokenId, tier);
         uint256 salt = 1;
@@ -81,26 +65,81 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         accountRegistry.createAccount(implementation, block.chainid, address(this), tokenId, salt, "");
         address accountAddress = accountRegistry.account(implementation, block.chainid, address(this), tokenId, salt);
         console2.log("Created ERC-6551 Account: ", accountAddress);
-        accounts[user] = accountAddress;
 
-        // Supply Aave
-        wEthGateway.depositETH{ value: value }(address(aavePool), user, 0);
-        DebtTokenBase(AaveV3SepoliaAssets.WETH_V_TOKEN).delegationWithSig(
-            user, address(wEthGateway), value, deadline, wETHPermit.v, wETHPermit.r, wETHPermit.s
+        if (tiers[tier].price == 0) {
+            accounts[user] = User({
+                currentTier: tier,
+                nextTier: tier,
+                accountAddress: accountAddress,
+                validUntil: type(uint256).max
+            });
+            return;
+        }
+
+        accounts[user] = User({
+            currentTier: tier,
+            nextTier: tier,
+            accountAddress: accountAddress,
+            validUntil: block.timestamp + 30 days
+        });
+    }
+
+    function delegateGHO(address user, Signature memory permit, uint8 tier, uint256 durationInMonths) public {
+        uint256 amount = tiers[tier].price;
+        vGHO.delegationWithSig(
+            user, address(this), durationInMonths * amount, permit.deadline, permit.v, permit.r, permit.s
         );
-        getABalance(user);
-        getUserData(user);
+    }
+
+    function subscribe(address user, uint8 tier) external {
+        require(accounts[user].accountAddress == address(0), "GHOTunes: Account already exists");
+        require(tier < totalTiers, "GHOTunes: Invalid Tier");
+        uint256 amount = tiers[tier].price;
+        borrowGHO(user, amount);
+        createAccount(user, tier);
+    }
+
+    function subscribeWithGHO(address user, uint8 tier) external {
+        uint256 amount = tiers[tier].price;
+        require(ghoToken.balanceOf(user) >= amount, "GHOTunes: Insufficient GHO");
+        require(ghoToken.allowance(user, address(this)) >= amount, "GHOTunes: Insufficient GHO Allowance");
+        require(accounts[user].accountAddress == address(0), "GHOTunes: Account already exists");
+        require(tier < totalTiers, "GHOTunes: Invalid Tier");
+
+        ghoToken.transferFrom(user, address(this), amount);
+        createAccount(user, tier);
+    }
+
+    function subscribeWithETH(
+        address user,
+        uint8 tier,
+        uint256 durationInMonths,
+        Signature memory wETHPermit,
+        Signature memory ghoPermit
+    )
+        external
+        payable
+    {
+        require(accounts[user].accountAddress == address(0), "GHOTunes: Account already exists");
+        require(tier < totalTiers, "GHOTunes: Invalid Tier");
+        require(msg.value >= calculateETHRequired(tier), "GHOTunes: Insufficient ETH");
+        require(durationInMonths > 0, "GHOTunes: Invalid Duration");
+
+        uint256 value = msg.value;
+        uint256 amount = tiers[tier].price;
+
+        // Supply ETH to Aave
+        wEthGateway.depositETH{ value: value }(address(aavePool), user, 0);
+        vWETH.delegationWithSig(
+            user, address(wEthGateway), value, wETHPermit.deadline, wETHPermit.v, wETHPermit.r, wETHPermit.s
+        );
 
         // Borrow GHO
-        console2.log("Borrow GHO: ", amount);
-        DebtTokenBase(AaveV3SepoliaAssets.GHO_V_TOKEN).delegationWithSig(
-            user, address(this), durationInMonths * amount, deadline, ghoPermit.v, ghoPermit.r, ghoPermit.s
+        vGHO.delegationWithSig(
+            user, address(this), durationInMonths * amount, ghoPermit.deadline, ghoPermit.v, ghoPermit.r, ghoPermit.s
         );
-        aavePool.borrow(address(ghoToken), amount, 2, 0, user);
-
-        // log balance of gho
-        uint256 balance = ghoToken.balanceOf(address(this));
-        console2.log("Balance GHO: ", balance);
+        borrowGHO(user, amount);
+        createAccount(user, tier);
     }
 
     function getUserData(address user) public view {
