@@ -8,6 +8,8 @@ import { console2 } from "forge-std/src/console2.sol";
 
 // Contracts
 import { GHOTunes } from "../src/GHOTunes.sol";
+import { IGhoTunes } from "../src/interfaces/IGhoTunes.sol";
+
 import { SigUtils } from "../src/utils/SigUtils.sol";
 import { AccountRegistry } from "../src/accounts/AccountRegistry.sol";
 import { GHOTunesAccount } from "../src/accounts/Account.sol";
@@ -49,10 +51,10 @@ contract GHOTunesTest is Test {
         vWETH = DebtTokenBase(AaveV3SepoliaAssets.WETH_V_TOKEN);
         vGHO = DebtTokenBase(AaveV3SepoliaAssets.GHO_V_TOKEN);
 
-        GHOTunes.TIER[] memory tiers = new GHOTunes.TIER[](3);
-        tiers[0] = GHOTunes.TIER({ price: 0 ether }); // Free
-        tiers[1] = GHOTunes.TIER({ price: 5 ether }); // 5 GHO
-        tiers[2] = GHOTunes.TIER({ price: 10 ether }); // 10 GHO
+        IGhoTunes.TIER[] memory tiers = new GHOTunes.TIER[](3);
+        tiers[0] = IGhoTunes.TIER({ price: 0 ether }); // Free
+        tiers[1] = IGhoTunes.TIER({ price: 5 ether }); // 5 GHO
+        tiers[2] = IGhoTunes.TIER({ price: 10 ether }); // 10 GHO
 
         tunes = new GHOTunes(owner.addr, address(accountRegistry), address(implementation), tiers);
 
@@ -101,7 +103,7 @@ contract GHOTunesTest is Test {
         bytes32 digest = sigUtils.getTypedDataHash(permit);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(user1.privateKey, digest);
-        GHOTunes.Signature memory sig = GHOTunes.Signature({ v: v, r: r, s: s });
+        GHOTunes.Signature memory sig = IGhoTunes.Signature({ v: v, r: r, s: s });
 
         return sig;
     }

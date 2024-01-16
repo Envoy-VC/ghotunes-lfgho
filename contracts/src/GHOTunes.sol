@@ -13,48 +13,19 @@ import { AccountRegistry } from "./accounts/AccountRegistry.sol";
 import { GHOTunesAccount } from "./accounts/Account.sol";
 
 // Aave V3 Contracts
-import { IPool } from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import { IAToken } from "@aave/core-v3/contracts/interfaces/IAToken.sol";
-import { IWrappedTokenGatewayV3 } from "./interfaces/IWrappedTokenGatewayV3.sol";
-import { IPriceOracle } from "@aave/core-v3/contracts/interfaces/IPriceOracle.sol";
-import { AaveV3Sepolia, AaveV3SepoliaAssets } from "aave-address-book/AaveV3Sepolia.sol";
-import { IPoolDataProvider } from "@aave/core-v3/contracts/interfaces/IPoolDataProvider.sol";
-import { IVariableDebtToken } from "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
+import { AaveV3SepoliaAssets } from "aave-address-book/AaveV3Sepolia.sol";
 import { DebtTokenBase } from "@aave/core-v3/contracts/protocol/tokenization/base/DebtTokenBase.sol";
-import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+
+// Base
+import { GHOTunesBase } from "./base/GHOTunesBase.sol";
 
 // Interfaces
 import { IGhoToken } from "./interfaces/IGhoToken.sol";
+import { IGhoTunes } from "./interfaces/IGhoTunes.sol";
 
-contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
+contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     uint256 private _nextTokenId;
-    AccountRegistry public accountRegistry;
-    IPoolAddressesProvider public aaveAddressesProvider;
-    IPriceOracle public priceOracle;
-    IPoolDataProvider public poolDataProvider;
-    IPool public aavePool;
-    IWrappedTokenGatewayV3 public wEthGateway;
-    IAToken public aWETH;
-    IGhoToken public ghoToken;
-
-    address public implementation;
-
-    uint256 public constant GHO_PRICE_USD = 1e8;
-
-    mapping(address => address) public accounts;
-    uint256 public totalTiers;
-    mapping(uint256 => TIER) public tiers;
-
-    struct TIER {
-        // Price in GHO Token
-        uint256 price;
-    }
-
-    struct Signature {
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-    }
 
     constructor(
         address initialOwner,
@@ -65,14 +36,7 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
         ERC721("GHO Tunes", "TUNES")
         Ownable(initialOwner)
     {
-        aaveAddressesProvider = IPoolAddressesProvider(address(AaveV3Sepolia.POOL_ADDRESSES_PROVIDER));
-        priceOracle = IPriceOracle(aaveAddressesProvider.getPriceOracle());
-        poolDataProvider = IPoolDataProvider(aaveAddressesProvider.getPoolDataProvider());
         accountRegistry = AccountRegistry(_accountRegistry);
-        aavePool = IPool(address(AaveV3Sepolia.POOL));
-        wEthGateway = IWrappedTokenGatewayV3(AaveV3Sepolia.WETH_GATEWAY);
-        aWETH = IAToken(address(AaveV3SepoliaAssets.WETH_A_TOKEN));
-        ghoToken = IGhoToken(address(AaveV3SepoliaAssets.GHO_UNDERLYING));
         implementation = _implementation;
 
         uint256 len = _tiers.length;
@@ -102,7 +66,7 @@ contract GHOTunes is ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
         Signature memory wETHPermit,
         Signature memory ghoPermit
     )
-        public
+        external
         payable
     {
         require(accounts[user] == address(0), "GHOTunes: Account already exists");
