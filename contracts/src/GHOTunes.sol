@@ -71,24 +71,25 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
                 currentTier: tier,
                 nextTier: tier,
                 accountAddress: accountAddress,
-                validUntil: type(uint256).max
+                validUntil: type(uint256).max,
+                upkeepDetails: UpkeepDetails({ upkeepAddress: address(0), forwarderAddress: address(0), upkeepId: 0 })
             });
             return;
         }
 
+        UpkeepDetails memory upkeepDetails = createCronUpkeep(accountAddress);
         accounts[user] = User({
             currentTier: tier,
             nextTier: tier,
             accountAddress: accountAddress,
-            validUntil: block.timestamp + 30 days
+            validUntil: block.timestamp + 30 days,
+            upkeepDetails: upkeepDetails
         });
-
-        // TODO: Create Upkeep Contract
     }
 
-    function registerUpkeep() public {
-        uint256 timestamp = block.timestamp;
-    }
+    // function registerUpkeep() public {
+    //     uint256 timestamp = block.timestamp;
+    // }
 
     function delegateGHO(address user, Signature memory permit, uint8 tier, uint256 durationInMonths) public {
         uint256 amount = tiers[tier].price;

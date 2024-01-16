@@ -59,9 +59,15 @@ contract GHOTunesTest is Test {
         tunes = new GHOTunes(owner.addr, address(accountRegistry), address(implementation), tiers);
 
         vm.stopPrank();
+        vm.startPrank(0xBF4979305B43B0eB5Bb6a5C67ffB89408803d3e1);
+        (bool success,) = address(0x779877A7B0D9E8603169DdbD7836e478b4624789).call(
+            abi.encodeWithSignature("transfer(address,uint256)", address(tunes), 10 ether)
+        );
+        require(success, "Transfer failed");
+        vm.stopPrank();
     }
 
-    function tes_depositAndSubscribe() external {
+    function test_depositAndSubscribe() external {
         vm.startPrank(user1.addr);
         vm.deal(user1.addr, 100 ether);
 
@@ -78,42 +84,30 @@ contract GHOTunesTest is Test {
             generatePermitSignature(vGHO, user1.addr, address(tunes), amount * DURATION_IN_MONTHS);
 
         tunes.subscribeWithETH{ value: ethRequired }(user1.addr, 1, DURATION_IN_MONTHS, wETHPermit, ghoPermit);
+
+        (uint8 c, uint8 n, address a, uint256 v, IGhoTunes.UpkeepDetails memory details) = tunes.accounts(user1.addr);
+
+        console2.log("CurrentTier: ", c);
+        console2.log("NextTier: ", n);
+        console2.log("AccountAddress: ", a);
+        console2.log("ValidUntil: ", v);
+        console2.log("");
+        console2.log("UpkeepAddress: ", details.upkeepAddress);
+        console2.log("ForwarderAddress: ", details.forwarderAddress);
+        console2.log("UpkeepId: ", details.upkeepId);
+
         vm.stopPrank();
     }
 
-    function tes_subscribe() external {
+    function test_subscribe() external {
         vm.startPrank(user1.addr);
-
         tunes.subscribe(user1.addr, 0);
-        (uint8 c, uint8 n, address a, uint256 v) = tunes.accounts(user1.addr);
-
-        console2.log("CurrentTier: ", c);
-        console2.log("NextTier: ", n);
-        console2.log("AccountAddress: ", a);
-        console2.log("ValidUntil: ", v);
-
         vm.stopPrank();
     }
 
-    function tes_subscribeWithGHO() external {
+    function test_subscribeWithGHO() external {
         vm.startPrank(user1.addr);
-        vm.deal(user1.addr, 100 ether);
-
         tunes.subscribeWithGHO(user1.addr, 0);
-
-        (uint8 c, uint8 n, address a, uint256 v) = tunes.accounts(user1.addr);
-
-        console2.log("CurrentTier: ", c);
-        console2.log("NextTier: ", n);
-        console2.log("AccountAddress: ", a);
-        console2.log("ValidUntil: ", v);
-        vm.stopPrank();
-    }
-
-    function test_Cron() external {
-        vm.startPrank(user1.addr);
-
-        tunes.getCronString();
         vm.stopPrank();
     }
 

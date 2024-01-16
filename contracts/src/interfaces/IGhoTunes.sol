@@ -2,11 +2,18 @@
 pragma solidity ^0.8.20;
 
 interface IGhoTunes {
+    struct UpkeepDetails {
+        address upkeepAddress;
+        address forwarderAddress;
+        uint256 upkeepId;
+    }
+
     struct User {
         uint8 currentTier;
         uint8 nextTier;
         address accountAddress;
         uint256 validUntil;
+        UpkeepDetails upkeepDetails;
     }
 
     struct TIER {

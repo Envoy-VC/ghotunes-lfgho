@@ -19,9 +19,15 @@ import { DebtTokenBase } from "@aave/core-v3/contracts/protocol/tokenization/bas
 import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 
 // Chainlink Imports
-import { CronUpkeepFactory } from "@chainlink/contracts/src/v0.8/factories/CronUpkeepFactory.sol";
-import { AutomationRegistrar2_1 } from "@chainlink/contracts/src/v0.8/automation/v2_1/AutomationRegistrar2_1.sol";
+import { ICronUpkeepFactory } from "../interfaces/chainlink/ICronUpkeepFactory.sol";
+import { IAutomationRegistrar } from "../interfaces/chainlink/IAutomationRegistrar.sol";
+import { CronUpkeep } from "@chainlink/contracts/src/v0.8/automation/upkeeps/CronUpkeep.sol";
 import { IERC677 } from "@chainlink/contracts/src/v0.8/shared/token/ERC677/IERC677.sol";
+import {
+    IKeeperRegistry,
+    IAutomationForwarder,
+    IAutomationRegistryConsumer
+} from "../interfaces/chainlink/IKeeperRegistry.sol";
 
 // Interfaces
 import { IGhoToken } from "../interfaces/IGhoToken.sol";
@@ -29,9 +35,11 @@ import { IGhoTunes } from "../interfaces/IGhoTunes.sol";
 
 // Utils
 import { TimestampConverter } from "../utils/TimeStamp.sol";
+import { console2 } from "forge-std/src/console2.sol";
 
 abstract contract GHOTunesBase is IGhoTunes {
     using Strings for uint256;
+    using Strings for uint8;
 
     // Aave V3 Address Provider
     IPoolAddressesProvider public aaveAddressesProvider =
@@ -63,10 +71,12 @@ abstract contract GHOTunesBase is IGhoTunes {
     address constant CRON_UPKEEP_FACTORY_SEPOLIA = 0x282CC3d6041f567d129214FfC9dd3FB57076e3b8;
     address constant AUTOMATION_REGISTRAR_SEPOLIA = 0xb0E49c5D0d05cbc241d68c05BC5BA1d1B7B72976;
     address constant LINK_TOKEN_SEPOLIA = 0x779877A7B0D9E8603169DdbD7836e478b4624789;
+    address constant KeeperRegistrySepolia = 0x86EFBD0b6736Bed994962f9797049422A3A8E8Ad;
 
     // Chainlink Contracts
-    CronUpkeepFactory public cronUpkeepFactory = CronUpkeepFactory(CRON_UPKEEP_FACTORY_SEPOLIA);
-    AutomationRegistrar2_1 public automationRegistrar = AutomationRegistrar2_1(AUTOMATION_REGISTRAR_SEPOLIA);
+    ICronUpkeepFactory public cronUpkeepFactory = ICronUpkeepFactory(CRON_UPKEEP_FACTORY_SEPOLIA);
+
+    IAutomationRegistrar public automationRegistrar = IAutomationRegistrar(AUTOMATION_REGISTRAR_SEPOLIA);
     IERC677 public linkToken = IERC677(LINK_TOKEN_SEPOLIA);
 
     // ERC-6551 Token Bound Account Implementation
@@ -85,10 +95,10 @@ abstract contract GHOTunesBase is IGhoTunes {
     uint256 public totalTiers;
     mapping(uint256 => TIER) public tiers;
 
-    function getCronString() public {
-        uint8 day = getDayOfMonth(block.timestamp);
-        string memory cronString = abi.encodePacked("0 0 ", day.toString(), "* *");
-        console2.log("Cron: ", cronString);
+    function getCronString() public view returns (string memory) {
+        uint256 day = TimestampConverter.getDayOfMonth(block.timestamp);
+        string memory cronString = string.concat("0 0 ", day.toString(), " * *");
+        return cronString;
     }
 
     function calculateETHRequired(uint256 _tier) public view returns (uint256) {
@@ -98,6 +108,44 @@ abstract contract GHOTunesBase is IGhoTunes {
         (, uint256 ltv,,,,,,,,) = poolDataProvider.getReserveConfigurationData(AaveV3SepoliaAssets.WETH_UNDERLYING);
         uint256 ethRequired = (tierPrice * GHO_PRICE_USD * 1e4) / (ltv * assetPrice);
         return ethRequired;
+    }
+
+    function createCronUpkeep(address _for) public returns (UpkeepDetails memory) {
+        string memory cronString = getCronString();
+        // TODO: Update Signature
+        bytes memory trigger = abi.encodeWithSignature("update()");
+        bytes memory encodedJob = cronUpkeepFactory.encodeCronJob(_for, trigger, cronString);
+
+        CronUpkeep cronUpkeep = new CronUpkeep(address(this), 0x22b880E90Ced10d1ddc6Bb6d1a87Ef1Cf9A8E2c2, 5, encodedJob);
+
+        IAutomationRegistrar.RegistrationParams memory registrationParams = IAutomationRegistrar.RegistrationParams({
+            name: "GHO Tunes Subscription",
+            encryptedEmail: "0x",
+            upkeepContract: address(cronUpkeep),
+            gasLimit: 500_000,
+            adminAddress: address(this),
+            triggerType: 0,
+            checkData: "0x",
+            triggerConfig: "0x",
+            offchainConfig: "0x",
+            amount: 1 ether
+        });
+        (bool success,) = address(linkToken).call(
+            abi.encodeWithSignature("approve(address,uint256)", address(automationRegistrar), 1 ether)
+        );
+        require(success, "GHOTunes: Failed to approve LINK");
+
+        uint256 upkeepId = automationRegistrar.registerUpkeep(registrationParams);
+        IKeeperRegistry keeperRegistry = IKeeperRegistry(KeeperRegistrySepolia);
+        IAutomationForwarder forwarder = keeperRegistry.getForwarder(upkeepId);
+
+        UpkeepDetails memory upkeepDetails = UpkeepDetails({
+            upkeepAddress: address(cronUpkeep),
+            forwarderAddress: address(forwarder),
+            upkeepId: upkeepId
+        });
+
+        return upkeepDetails;
     }
 
     function _buildURI(uint256 tokenId, uint8 tier) internal view returns (string memory) {

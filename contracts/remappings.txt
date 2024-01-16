@@ -3,4 +3,4 @@
 forge-std/=lib/forge-std/
 aave-address-book/=lib/aave-address-book/src/
 @aave/core-v3/=lib/aave-address-book/lib/aave-v3-core/
-@chainlink/=lib/foundry-chainlink-toolkit/lib/chainlink-brownie-contracts/
+@chainlink/contracts/=node_modules/@chainlink/contracts/
