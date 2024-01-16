@@ -52,7 +52,7 @@ contract GHOTunesTest is Test {
         vGHO = DebtTokenBase(AaveV3SepoliaAssets.GHO_V_TOKEN);
 
         IGhoTunes.TIER[] memory tiers = new GHOTunes.TIER[](3);
-        tiers[0] = IGhoTunes.TIER({ name: "Free", image: "bronze.png", price: 1 ether }); // 1 GHO
+        tiers[0] = IGhoTunes.TIER({ name: "Free", image: "bronze.png", price: 0 ether }); // Free
         tiers[1] = IGhoTunes.TIER({ name: "Silver", image: "silverImage.png", price: 5 ether }); // 5 GHO
         tiers[2] = IGhoTunes.TIER({ name: "Gold", image: "goldImage.png", price: 10 ether }); // 10 GHO
 
@@ -78,6 +78,35 @@ contract GHOTunesTest is Test {
             generatePermitSignature(vGHO, user1.addr, address(tunes), amount * DURATION_IN_MONTHS);
 
         tunes.subscribeWithETH{ value: ethRequired }(user1.addr, 1, DURATION_IN_MONTHS, wETHPermit, ghoPermit);
+        vm.stopPrank();
+    }
+
+    function test_subscribe() external {
+        vm.startPrank(user1.addr);
+
+        tunes.subscribe(user1.addr, 0);
+        (uint8 c, uint8 n, address a, uint256 v) = tunes.accounts(user1.addr);
+
+        console2.log("CurrentTier: ", c);
+        console2.log("NextTier: ", n);
+        console2.log("AccountAddress: ", a);
+        console2.log("ValidUntil: ", v);
+
+        vm.stopPrank();
+    }
+
+    function test_subscribeWithGHO() external {
+        vm.startPrank(user1.addr);
+        vm.deal(user1.addr, 100 ether);
+
+        tunes.subscribeWithGHO(user1.addr, 0);
+
+        (uint8 c, uint8 n, address a, uint256 v) = tunes.accounts(user1.addr);
+
+        console2.log("CurrentTier: ", c);
+        console2.log("NextTier: ", n);
+        console2.log("AccountAddress: ", a);
+        console2.log("ValidUntil: ", v);
         vm.stopPrank();
     }
 

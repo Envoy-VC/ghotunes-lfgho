@@ -103,6 +103,7 @@ abstract contract GHOTunesBase is IGhoTunes {
     }
 
     function borrowGHO(address onBehalfOf, uint256 amount) internal {
+        if (amount == 0) return;
         require(vGHO.borrowAllowance(onBehalfOf, address(this)) >= amount, "GHOTunes: Insufficient GHO Delegated");
         aavePool.borrow(address(ghoToken), amount, 2, 0, onBehalfOf);
     }

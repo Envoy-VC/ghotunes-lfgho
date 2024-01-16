@@ -82,6 +82,8 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
             accountAddress: accountAddress,
             validUntil: block.timestamp + 30 days
         });
+
+        // TODO: Create Upkeep Contract
     }
 
     function delegateGHO(address user, Signature memory permit, uint8 tier, uint256 durationInMonths) public {
