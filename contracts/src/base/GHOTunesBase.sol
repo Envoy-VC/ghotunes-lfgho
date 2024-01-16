@@ -19,7 +19,7 @@ import { DebtTokenBase } from "@aave/core-v3/contracts/protocol/tokenization/bas
 import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 
 // Chainlink Imports
-import { CronUpkeepFactory } from "@chainlink/contracts/src/v0.8/automation/upkeeps/CronUpkeepFactory.sol";
+import { CronUpkeepFactory } from "@chainlink/contracts/src/v0.8/factories/CronUpkeepFactory.sol";
 import { AutomationRegistrar2_1 } from "@chainlink/contracts/src/v0.8/automation/v2_1/AutomationRegistrar2_1.sol";
 import { IERC677 } from "@chainlink/contracts/src/v0.8/shared/token/ERC677/IERC677.sol";
 
