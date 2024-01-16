@@ -52,9 +52,9 @@ contract GHOTunesTest is Test {
         vGHO = DebtTokenBase(AaveV3SepoliaAssets.GHO_V_TOKEN);
 
         IGhoTunes.TIER[] memory tiers = new GHOTunes.TIER[](3);
-        tiers[0] = IGhoTunes.TIER({ price: 0 ether }); // Free
-        tiers[1] = IGhoTunes.TIER({ price: 5 ether }); // 5 GHO
-        tiers[2] = IGhoTunes.TIER({ price: 10 ether }); // 10 GHO
+        tiers[0] = IGhoTunes.TIER({ name: "Free", image: "bronze.png", price: 1 ether }); // 1 GHO
+        tiers[1] = IGhoTunes.TIER({ name: "Silver", image: "silverImage.png", price: 5 ether }); // 5 GHO
+        tiers[2] = IGhoTunes.TIER({ name: "Gold", image: "goldImage.png", price: 10 ether }); // 10 GHO
 
         tunes = new GHOTunes(owner.addr, address(accountRegistry), address(implementation), tiers);
 
@@ -73,7 +73,7 @@ contract GHOTunesTest is Test {
         GHOTunes.Signature memory wETHPermit =
             generatePermitSignature(vWETH, user1.addr, address(AaveV3Sepolia.WETH_GATEWAY), ethRequired);
 
-        uint256 amount = tunes.tiers(1);
+        (,, uint256 amount) = tunes.tiers(1);
         console2.log("Amount: ", amount);
         GHOTunes.Signature memory ghoPermit =
             generatePermitSignature(vGHO, user1.addr, address(tunes), amount * DURATION_IN_MONTHS);

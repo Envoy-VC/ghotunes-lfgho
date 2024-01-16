@@ -49,18 +49,9 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         }
     }
 
-    function calculateETHRequired(uint256 _tier) public view returns (uint256) {
-        TIER memory tier = tiers[_tier];
-        uint256 tierPrice = tier.price;
-        uint256 assetPrice = priceOracle.getAssetPrice(AaveV3SepoliaAssets.WETH_UNDERLYING);
-        (, uint256 ltv,,,,,,,,) = poolDataProvider.getReserveConfigurationData(AaveV3SepoliaAssets.WETH_UNDERLYING);
-        uint256 ethRequired = (tierPrice * GHO_PRICE_USD * 1e4) / (ltv * assetPrice);
-        return ethRequired;
-    }
-
     function depositAndSubscribe(
         address user,
-        uint256 tier,
+        uint8 tier,
         uint256 durationInMonths,
         uint256 deadline,
         Signature memory wETHPermit,
@@ -80,7 +71,7 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
 
         // Mint NFT to user.
         uint256 tokenId = _nextTokenId++;
-        string memory uri = _buildURI(tokenId);
+        string memory uri = _buildURI(tokenId, tier);
         uint256 salt = 1;
         _safeMint(user, tokenId);
         _setTokenURI(tokenId, uri);
@@ -133,10 +124,6 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         uint256 balance = IAToken(AaveV3SepoliaAssets.WETH_A_TOKEN).balanceOf(user);
         console2.log("Balance aWETH: ", balance);
         return balance;
-    }
-
-    function _buildURI(uint256 tokenId) internal pure returns (string memory) {
-        return string(abi.encodePacked("{" "name: GHO Tunes ", tokenId, ",", "description: GHO Tunes"));
     }
 
     // The following functions are overrides required by Solidity.
