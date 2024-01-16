@@ -61,7 +61,7 @@ contract GHOTunesTest is Test {
         vm.stopPrank();
     }
 
-    function test_depositAndSubscribe() external {
+    function tes_depositAndSubscribe() external {
         vm.startPrank(user1.addr);
         vm.deal(user1.addr, 100 ether);
 
@@ -81,7 +81,7 @@ contract GHOTunesTest is Test {
         vm.stopPrank();
     }
 
-    function test_subscribe() external {
+    function tes_subscribe() external {
         vm.startPrank(user1.addr);
 
         tunes.subscribe(user1.addr, 0);
@@ -95,7 +95,7 @@ contract GHOTunesTest is Test {
         vm.stopPrank();
     }
 
-    function test_subscribeWithGHO() external {
+    function tes_subscribeWithGHO() external {
         vm.startPrank(user1.addr);
         vm.deal(user1.addr, 100 ether);
 
@@ -107,6 +107,13 @@ contract GHOTunesTest is Test {
         console2.log("NextTier: ", n);
         console2.log("AccountAddress: ", a);
         console2.log("ValidUntil: ", v);
+        vm.stopPrank();
+    }
+
+    function test_Cron() external {
+        vm.startPrank(user1.addr);
+
+        tunes.getCronString();
         vm.stopPrank();
     }
 

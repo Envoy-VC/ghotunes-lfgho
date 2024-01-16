@@ -18,9 +18,17 @@ import { IPoolDataProvider } from "@aave/core-v3/contracts/interfaces/IPoolDataP
 import { DebtTokenBase } from "@aave/core-v3/contracts/protocol/tokenization/base/DebtTokenBase.sol";
 import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 
+// Chainlink Imports
+import { CronUpkeepFactory } from "@chainlink/contracts/src/v0.8/automation/upkeeps/CronUpkeepFactory.sol";
+import { AutomationRegistrar2_1 } from "@chainlink/contracts/src/v0.8/automation/v2_1/AutomationRegistrar2_1.sol";
+import { IERC677 } from "@chainlink/contracts/src/v0.8/shared/token/ERC677/IERC677.sol";
+
 // Interfaces
 import { IGhoToken } from "../interfaces/IGhoToken.sol";
 import { IGhoTunes } from "../interfaces/IGhoTunes.sol";
+
+// Utils
+import { TimestampConverter } from "../utils/TimeStamp.sol";
 
 abstract contract GHOTunesBase is IGhoTunes {
     using Strings for uint256;
@@ -51,6 +59,16 @@ abstract contract GHOTunesBase is IGhoTunes {
 
     DebtTokenBase public vGHO = DebtTokenBase(AaveV3SepoliaAssets.GHO_V_TOKEN);
 
+    // Chainlink Tokens
+    address constant CRON_UPKEEP_FACTORY_SEPOLIA = 0x282CC3d6041f567d129214FfC9dd3FB57076e3b8;
+    address constant AUTOMATION_REGISTRAR_SEPOLIA = 0xb0E49c5D0d05cbc241d68c05BC5BA1d1B7B72976;
+    address constant LINK_TOKEN_SEPOLIA = 0x779877A7B0D9E8603169DdbD7836e478b4624789;
+
+    // Chainlink Contracts
+    CronUpkeepFactory public cronUpkeepFactory = CronUpkeepFactory(CRON_UPKEEP_FACTORY_SEPOLIA);
+    AutomationRegistrar2_1 public automationRegistrar = AutomationRegistrar2_1(AUTOMATION_REGISTRAR_SEPOLIA);
+    IERC677 public linkToken = IERC677(LINK_TOKEN_SEPOLIA);
+
     // ERC-6551 Token Bound Account Implementation
     address public implementation;
 
@@ -66,6 +84,12 @@ abstract contract GHOTunesBase is IGhoTunes {
     // Tiers of GHO Tunes
     uint256 public totalTiers;
     mapping(uint256 => TIER) public tiers;
+
+    function getCronString() public {
+        uint8 day = getDayOfMonth(block.timestamp);
+        string memory cronString = abi.encodePacked("0 0 ", day.toString(), "* *");
+        console2.log("Cron: ", cronString);
+    }
 
     function calculateETHRequired(uint256 _tier) public view returns (uint256) {
         TIER memory tier = tiers[_tier];

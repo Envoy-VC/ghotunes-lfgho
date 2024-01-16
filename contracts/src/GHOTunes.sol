@@ -86,6 +86,10 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         // TODO: Create Upkeep Contract
     }
 
+    function registerUpkeep() public {
+        uint256 timestamp = block.timestamp;
+    }
+
     function delegateGHO(address user, Signature memory permit, uint8 tier, uint256 durationInMonths) public {
         uint256 amount = tiers[tier].price;
         vGHO.delegationWithSig(
