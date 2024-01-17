@@ -9,6 +9,11 @@ export default {
 				sans: ['var(--font-sans)', ...fontFamily.sans],
 				mario: ['Super Mario', 'sans-serif'],
 			},
+			colors: {
+				background: '#fafae3',
+				primary: '#f76263',
+				secondary: '#f77d79',
+			},
 		},
 	},
 	plugins: [],

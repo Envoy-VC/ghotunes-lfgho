@@ -5,9 +5,9 @@ import { ConnectKitButton } from 'connectkit';
 
 const Home = () => {
 	return (
-		<div className='h-screen bg-[#fafae3]'>
+		<div className=''>
 			<ConnectKitButton />
-			<div className='font-mario logo text-6xl tracking-wider text-[#f76263]'>
+			<div className='text-primary font-mario text-6xl tracking-wider'>
 				GHO Tunes
 			</div>
 		</div>
