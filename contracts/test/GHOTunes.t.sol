@@ -75,6 +75,13 @@ contract GHOTunesTest is Test {
         vm.startPrank(user1.addr);
         vm.deal(user1.addr, 100 ether);
 
+        console2.log("Deployed Tunes: ", address(tunes));
+        console2.log("");
+        console2.log("Free:   0 GHO");
+        console2.log("Silver: 5 GHO");
+        console2.log("Gold:   10 GHO");
+        console2.log("");
+
         uint256 DURATION_IN_MONTHS = 12;
         //uint256 ethRequired = tunes.calculateETHRequired(1);
 
@@ -180,17 +187,9 @@ contract GHOTunesTest is Test {
         tunes.changeTier(0, 1);
         (string memory nn1,,) = tunes.tiers(1);
         console2.log("User Changed Tier to: ", nn1);
-        console2.log("Tier change will happen on next billing");
-        vm.warp(block.timestamp + 30 days);
+        console2.log("User has to call renew function as there is no upkeep running");
         console2.log("");
-        console2.log("========= Forwarding 1 month =========");
-
-        console2.log("Chainlink Upkeep Calling renew on ERC-6551 Account...");
-        console2.log("");
-        vm.stopPrank();
-
-        vm.startPrank(details.forwarderAddress);
-        account.performUpkeep();
+        tunes.renew(0);
         (uint8 nnc1,,, uint256 nnv1,) = tunes.accounts(user1.addr);
         console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
         console2.log("");
