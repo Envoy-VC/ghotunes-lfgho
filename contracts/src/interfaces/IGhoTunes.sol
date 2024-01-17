@@ -38,4 +38,8 @@ interface IGhoTunes {
     )
         external
         payable;
+
+    function renew(uint256 tokenId) external;
+
+    function handleRenewFail(uint256 tokenId) external;
 }

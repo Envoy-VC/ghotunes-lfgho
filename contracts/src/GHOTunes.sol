@@ -23,9 +23,14 @@ import { GHOTunesBase } from "./base/GHOTunesBase.sol";
 // Interfaces
 import { IGhoToken } from "./interfaces/IGhoToken.sol";
 import { IGhoTunes } from "./interfaces/IGhoTunes.sol";
+import {
+    IKeeperRegistry,
+    IAutomationForwarder,
+    IAutomationRegistryConsumer
+} from "./interfaces/chainlink/IKeeperRegistry.sol";
 
 contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
-    uint256 private _nextTokenId;
+    uint256 public _nextTokenId;
 
     constructor(
         address initialOwner,
@@ -59,12 +64,10 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         uint256 salt = 1;
         _safeMint(user, tokenId);
         _setTokenURI(tokenId, uri);
-        console2.log("Minted NFT: ", tokenId);
 
         // Create ERC6551 Account
         accountRegistry.createAccount(implementation, block.chainid, address(this), tokenId, salt, "");
         address accountAddress = accountRegistry.account(implementation, block.chainid, address(this), tokenId, salt);
-        console2.log("Created ERC-6551 Account: ", accountAddress);
 
         if (tiers[tier].price == 0) {
             accounts[user] = User({
@@ -78,6 +81,9 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         }
 
         UpkeepDetails memory upkeepDetails = createCronUpkeep(accountAddress);
+        GHOTunesAccount account = GHOTunesAccount(payable(accountAddress));
+        account.initialize(upkeepDetails.forwarderAddress);
+
         accounts[user] = User({
             currentTier: tier,
             nextTier: tier,
@@ -86,10 +92,6 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
             upkeepDetails: upkeepDetails
         });
     }
-
-    // function registerUpkeep() public {
-    //     uint256 timestamp = block.timestamp;
-    // }
 
     function delegateGHO(address user, Signature memory permit, uint8 tier, uint256 durationInMonths) public {
         uint256 amount = tiers[tier].price;
@@ -149,27 +151,55 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         createAccount(user, tier);
     }
 
-    function getUserData(address user) public view {
-        (
-            uint256 totalCollateralBase,
-            uint256 totalDebtBase,
-            uint256 availableBorrowsBase,
-            uint256 currentLiquidationThreshold,
-            uint256 ltv,
-            uint256 healthFactor
-        ) = aavePool.getUserAccountData(user);
-        console2.log("Total Collateral Base: ", totalCollateralBase);
-        console2.log("Total Debt Base: ", totalDebtBase);
-        console2.log("Available Borrows Base: ", availableBorrowsBase);
-        console2.log("Current Liquidation Threshold: ", currentLiquidationThreshold);
-        console2.log("LTV: ", ltv);
-        console2.log("Health Factor: ", healthFactor);
+    function changeTier(uint256 tokenId, uint8 nextTier) public {
+        address owner = ownerOf(tokenId);
+        require(owner == msg.sender, "GHOTunes: Only owner can change tier");
+        User storage user = accounts[owner];
+
+        user.nextTier = nextTier;
     }
 
-    function getABalance(address user) public view returns (uint256) {
-        uint256 balance = IAToken(AaveV3SepoliaAssets.WETH_A_TOKEN).balanceOf(user);
-        console2.log("Balance aWETH: ", balance);
-        return balance;
+    function renew(uint256 tokenId) external {
+        address owner = ownerOf(tokenId);
+        User storage user = accounts[owner];
+        require(user.accountAddress != address(0), "GHOTunes: Account does not exist");
+        require(msg.sender == user.accountAddress || msg.sender == owner, "GHOTunes: Only Account or Owner can renew");
+
+        uint8 currentTier = user.currentTier;
+        uint8 nextTier = user.nextTier;
+
+        uint256 amount = tiers[nextTier].price;
+
+        if (nextTier == currentTier) {
+            borrowGHO(owner, amount);
+            user.validUntil = block.timestamp + 30 days;
+        } else if (nextTier > currentTier) {
+            borrowGHO(owner, amount);
+            user.currentTier = nextTier;
+            user.validUntil = block.timestamp + 30 days;
+            _setTokenURI(tokenId, _buildURI(tokenId, nextTier));
+        } else {
+            borrowGHO(owner, amount);
+            user.currentTier = nextTier;
+            user.validUntil = block.timestamp + 30 days;
+            _setTokenURI(tokenId, _buildURI(tokenId, nextTier));
+        }
+    }
+
+    function handleRenewFail(uint256 tokenId) external {
+        address owner = ownerOf(tokenId);
+        User storage user = accounts[owner];
+        require(user.accountAddress != address(0), "GHOTunes: Account does not exist");
+        require(msg.sender == user.accountAddress || msg.sender == owner, "GHOTunes: Only Account or Owner can renew");
+
+        uint256 upkeepId = user.upkeepDetails.upkeepId;
+        IKeeperRegistry keeperRegistry = IKeeperRegistry(KeeperRegistrySepolia);
+        keeperRegistry.getForwarder(upkeepId).getRegistry().pauseUpkeep(upkeepId);
+        uint96 balance = keeperRegistry.getForwarder(upkeepId).getRegistry().getBalance(upkeepId);
+
+        user.currentTier = 0;
+        user.nextTier = 0;
+        user.validUntil = type(uint256).max;
     }
 
     // The following functions are overrides required by Solidity.

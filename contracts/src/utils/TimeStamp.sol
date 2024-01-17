@@ -37,8 +37,14 @@ library TimestampConverter {
             month++;
         }
 
+        // if day of month is 29,30,31 return 28 due to cron not working
+
         // Calculate the day of the month
         uint256 dayOfMonth = (remainingSeconds / secondsInDay) + 1;
+
+        if (dayOfMonth > 28) {
+            dayOfMonth = 28;
+        }
 
         return dayOfMonth;
     }

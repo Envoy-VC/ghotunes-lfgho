@@ -13,11 +13,47 @@ import { IPool } from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import { IPoolAddressesProvider } from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 import { AaveV3Sepolia } from "aave-address-book/AaveV3Sepolia.sol";
 
-contract GHOTunesAccount is IERC165, IERC1271, IERC6551Account, IERC6551Executable {
+// Token
+import { GHOTunes } from "../GhoTunes.sol";
+
+interface IAccount {
+    function performUpkeep() external;
+}
+
+contract GHOTunesAccount is IAccount, IERC165, IERC1271, IERC6551Account, IERC6551Executable {
     uint256 public state;
     IPoolAddressesProvider public aaveAddressesProvider =
         IPoolAddressesProvider(address(AaveV3Sepolia.POOL_ADDRESSES_PROVIDER));
     IPool public aavePool = IPool(address(AaveV3Sepolia.POOL));
+
+    address public forwarder;
+
+    event RenewSuccess(uint256 tokenId);
+
+    modifier onlyOnce() {
+        require(forwarder == address(0), "GHOTunesAccount: already initialized");
+        _;
+    }
+
+    modifier onlyForwarder() {
+        require(msg.sender == forwarder, "GHOTunesAccount: only forwarder");
+        _;
+    }
+
+    function initialize(address _forwarder) external onlyOnce {
+        require(_forwarder != address(0), "GHOTunesAccount: invalid forwarder");
+        forwarder = _forwarder;
+    }
+
+    function performUpkeep() external onlyForwarder {
+        (, address tokenContract, uint256 tokenId) = token();
+        GHOTunes tunes = GHOTunes(tokenContract);
+        try tunes.renew(tokenId) {
+            emit RenewSuccess(tokenId);
+        } catch {
+            tunes.handleRenewFail(tokenId);
+        }
+    }
 
     receive() external payable { }
 

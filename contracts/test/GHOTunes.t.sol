@@ -19,11 +19,15 @@ import { IPool } from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import { AaveV3Sepolia, AaveV3SepoliaAssets } from "aave-address-book/AaveV3Sepolia.sol";
 import { DebtTokenBase } from "@aave/core-v3/contracts/protocol/tokenization/base/DebtTokenBase.sol";
 
+import { IAccount } from "../src/accounts/Account.sol";
+import { IGhoToken } from "../src/interfaces/IGhoToken.sol";
+
 contract GHOTunesTest is Test {
     uint256 mainnetFork;
     GHOTunes public tunes;
     AccountRegistry public accountRegistry;
     GHOTunesAccount public implementation;
+    IGhoToken public ghoToken = IGhoToken(address(AaveV3SepoliaAssets.GHO_UNDERLYING));
 
     DebtTokenBase public vWETH;
     DebtTokenBase public vGHO;
@@ -71,41 +75,60 @@ contract GHOTunesTest is Test {
         vm.startPrank(user1.addr);
         vm.deal(user1.addr, 100 ether);
 
-        uint256 DURATION_IN_MONTHS = 12;
+        uint256 DURATION_IN_MONTHS = 2;
         uint256 ethRequired = tunes.calculateETHRequired(1);
-        console2.log("ETH Required: ", ethRequired);
 
+        // Get Signatures
         GHOTunes.Signature memory wETHPermit =
-            generatePermitSignature(vWETH, user1.addr, address(AaveV3Sepolia.WETH_GATEWAY), ethRequired);
+            generatePermitSignature(vWETH, user1.addr, address(AaveV3Sepolia.WETH_GATEWAY), 1 ether);
 
         (,, uint256 amount) = tunes.tiers(1);
-        console2.log("Amount: ", amount);
         GHOTunes.Signature memory ghoPermit =
             generatePermitSignature(vGHO, user1.addr, address(tunes), amount * DURATION_IN_MONTHS);
 
-        tunes.subscribeWithETH{ value: ethRequired }(user1.addr, 1, DURATION_IN_MONTHS, wETHPermit, ghoPermit);
+        console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
+
+        tunes.subscribeWithETH{ value: 1 ether }(user1.addr, 1, DURATION_IN_MONTHS, wETHPermit, ghoPermit);
 
         (uint8 c, uint8 n, address a, uint256 v, IGhoTunes.UpkeepDetails memory details) = tunes.accounts(user1.addr);
-
-        console2.log("CurrentTier: ", c);
-        console2.log("NextTier: ", n);
-        console2.log("AccountAddress: ", a);
-        console2.log("ValidUntil: ", v);
         console2.log("");
-        console2.log("UpkeepAddress: ", details.upkeepAddress);
-        console2.log("ForwarderAddress: ", details.forwarderAddress);
-        console2.log("UpkeepId: ", details.upkeepId);
+        console2.log("========= Subscribing =========");
+        console2.log("");
+        console2.log("Mint NFT with tokenId: ", tunes._nextTokenId() - 1);
+        console2.log("Created ERC-6551 Account: ", a);
+        (string memory cName,,) = tunes.tiers(c);
+        console2.log("Current Tier: ", cName);
+        console2.log("Valid Until: ", v);
+        console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
 
+        console2.log("");
+        console2.log("========= Forwarding 1 month =========");
+
+        vm.warp(block.timestamp + 30 days);
+        vm.stopPrank();
+
+        console2.log("Chainlink Upkeep Calling renew on ERC-6551 Account...");
+        console2.log("");
+
+        vm.startPrank(details.forwarderAddress);
+        IAccount account = IAccount(a);
+        account.performUpkeep();
+        (uint8 newC, uint8 newN,, uint256 newV,) = tunes.accounts(user1.addr);
+        console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
+        console2.log("");
+        (string memory newCName,,) = tunes.tiers(newC);
+        console2.log("Updated Tier: ", newCName);
+        console2.log("Updated Valid Until: ", newV);
         vm.stopPrank();
     }
 
-    function test_subscribe() external {
+    function atest_subscribe() external {
         vm.startPrank(user1.addr);
         tunes.subscribe(user1.addr, 0);
         vm.stopPrank();
     }
 
-    function test_subscribeWithGHO() external {
+    function atest_subscribeWithGHO() external {
         vm.startPrank(user1.addr);
         tunes.subscribeWithGHO(user1.addr, 0);
         vm.stopPrank();

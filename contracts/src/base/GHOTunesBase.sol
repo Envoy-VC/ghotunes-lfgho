@@ -112,8 +112,7 @@ abstract contract GHOTunesBase is IGhoTunes {
 
     function createCronUpkeep(address _for) public returns (UpkeepDetails memory) {
         string memory cronString = getCronString();
-        // TODO: Update Signature
-        bytes memory trigger = abi.encodeWithSignature("update()");
+        bytes memory trigger = abi.encodeWithSignature("performUpkeep()");
         bytes memory encodedJob = cronUpkeepFactory.encodeCronJob(_for, trigger, cronString);
 
         CronUpkeep cronUpkeep = new CronUpkeep(address(this), 0x22b880E90Ced10d1ddc6Bb6d1a87Ef1Cf9A8E2c2, 5, encodedJob);
@@ -137,11 +136,10 @@ abstract contract GHOTunesBase is IGhoTunes {
 
         uint256 upkeepId = automationRegistrar.registerUpkeep(registrationParams);
         IKeeperRegistry keeperRegistry = IKeeperRegistry(KeeperRegistrySepolia);
-        IAutomationForwarder forwarder = keeperRegistry.getForwarder(upkeepId);
 
         UpkeepDetails memory upkeepDetails = UpkeepDetails({
             upkeepAddress: address(cronUpkeep),
-            forwarderAddress: address(forwarder),
+            forwarderAddress: address(keeperRegistry.getForwarder(upkeepId)),
             upkeepId: upkeepId
         });
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+
+pragma solidity ^0.8.9;
 
 interface IERC6551Registry {
     /**
@@ -15,14 +16,14 @@ interface IERC6551Registry {
     );
 
     /**
-     * @dev Creates a token bound account for a non-fungible token
+     * @dev Creates a token bound account for a non-fungible token.
      *
-     * If account has already been created, returns the account address without calling create2
+     * If account has already been created, returns the account address without calling create2.
      *
      * If initData is not empty and account has not yet been created, calls account with
-     * provided initData after creation
+     * provided initData after creation.
      *
-     * Emits AccountCreated event
+     * Emits AccountCreated event.
      *
      * @return the address of the account
      */
@@ -31,7 +32,7 @@ interface IERC6551Registry {
         uint256 chainId,
         address tokenContract,
         uint256 tokenId,
-        uint256 seed,
+        uint256 salt,
         bytes calldata initData
     )
         external
