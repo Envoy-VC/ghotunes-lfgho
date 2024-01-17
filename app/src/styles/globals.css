@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+	font-family: 'Super Mario';
+	src: url('../../public/fonts/SuperMario256.ttf');
+}
+
+.logo {
+	text-shadow:
+		3px 0 #fff,
+		-3px 0 #fff,
+		0 3px #fff,
+		0 -3px #fff,
+		2px 2px #fff,
+		-2px -2px #fff,
+		2px -2px #fff,
+		-2px 2px #fff;
+}
