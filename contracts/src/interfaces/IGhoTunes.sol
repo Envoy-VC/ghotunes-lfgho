@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 interface IGhoTunes {
     struct UpkeepDetails {
-        uint256 jobId;
         address upkeepAddress;
         address forwarderAddress;
         uint256 upkeepId;
