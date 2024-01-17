@@ -6,8 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import { console2 } from "forge-std/src/console2.sol";
-
 // ERC-6551 Token Bound Accounts
 import { AccountRegistry } from "./accounts/AccountRegistry.sol";
 import { GHOTunesAccount } from "./accounts/Account.sol";
@@ -28,6 +26,7 @@ import {
     IAutomationForwarder,
     IAutomationRegistryConsumer
 } from "./interfaces/chainlink/IKeeperRegistry.sol";
+import { CronUpkeep } from "@chainlink/contracts/src/v0.8/automation/upkeeps/CronUpkeep.sol";
 
 contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
     uint256 public _nextTokenId;
@@ -74,8 +73,13 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
                 currentTier: tier,
                 nextTier: tier,
                 accountAddress: accountAddress,
-                validUntil: type(uint256).max,
-                upkeepDetails: UpkeepDetails({ upkeepAddress: address(0), forwarderAddress: address(0), upkeepId: 0 })
+                validUntil: block.timestamp + 30 days,
+                upkeepDetails: UpkeepDetails({
+                    jobId: 0,
+                    upkeepAddress: address(0),
+                    forwarderAddress: address(0),
+                    upkeepId: 0
+                })
             });
             return;
         }
@@ -155,7 +159,6 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         address owner = ownerOf(tokenId);
         require(owner == msg.sender, "GHOTunes: Only owner can change tier");
         User storage user = accounts[owner];
-
         user.nextTier = nextTier;
     }
 
@@ -171,17 +174,88 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         uint256 amount = tiers[nextTier].price;
 
         if (nextTier == currentTier) {
+            if (nextTier == 0) {
+                return;
+            }
             borrowGHO(owner, amount);
             user.validUntil = block.timestamp + 30 days;
         } else if (nextTier > currentTier) {
+            if (currentTier == 0) {
+                // User subscribing to paid tier.
+                if (user.upkeepDetails.upkeepAddress == address(0)) {
+                    // Create Upkeep
+                    UpkeepDetails memory upkeepDetails = createCronUpkeep(user.accountAddress);
+                    user.upkeepDetails = upkeepDetails;
+                } else {
+                    // Delete previous Job
+                    address upkeepAddress = user.upkeepDetails.upkeepAddress;
+                    CronUpkeep upkeep = CronUpkeep(payable(upkeepAddress));
+                    upkeep.deleteCronJob(user.upkeepDetails.jobId);
+
+                    // Create new Job
+                    string memory cronString = getCronString();
+                    bytes memory trigger = abi.encodeWithSignature("performUpkeep()");
+                    bytes memory encodedJob = cronUpkeepFactory.encodeCronJob(user.accountAddress, trigger, cronString);
+
+                    (address target, bytes memory handler, Spec memory spec) =
+                        abi.decode(encodedJob, (address, bytes, Spec));
+
+                    upkeep.createCronJobFromEncodedSpec(target, handler, abi.encode(spec));
+
+                    try upkeep.unpause() { } catch { }
+
+                    user.upkeepDetails.jobId++;
+                }
+            } else {
+                // if user is calling then create new job as cron is not valid now
+                if (msg.sender == user.accountAddress) {
+                    // Delete previous Job
+                    address upkeepAddress = user.upkeepDetails.upkeepAddress;
+                    CronUpkeep upkeep = CronUpkeep(payable(upkeepAddress));
+                    upkeep.deleteCronJob(user.upkeepDetails.jobId);
+
+                    // Create new Job
+                    string memory cronString = getCronString();
+                    bytes memory trigger = abi.encodeWithSignature("performUpkeep()");
+                    bytes memory encodedJob = cronUpkeepFactory.encodeCronJob(user.accountAddress, trigger, cronString);
+
+                    (address target, bytes memory handler, Spec memory spec) =
+                        abi.decode(encodedJob, (address, bytes, Spec));
+                    upkeep.createCronJobFromEncodedSpec(target, handler, abi.encode(spec));
+                    user.upkeepDetails.jobId++;
+                }
+            }
             borrowGHO(owner, amount);
             user.currentTier = nextTier;
             user.validUntil = block.timestamp + 30 days;
             _setTokenURI(tokenId, _buildURI(tokenId, nextTier));
         } else {
+            // user is downgrading
+
+            // if manually then create new job if not to free tier
+            if (msg.sender == user.accountAddress && nextTier > 0) {
+                // Delete previous Job
+                address upkeepAddress = user.upkeepDetails.upkeepAddress;
+                CronUpkeep upkeep = CronUpkeep(payable(upkeepAddress));
+                upkeep.deleteCronJob(user.upkeepDetails.jobId);
+
+                // Create new Job
+                string memory cronString = getCronString();
+                bytes memory trigger = abi.encodeWithSignature("performUpkeep()");
+                bytes memory encodedJob = cronUpkeepFactory.encodeCronJob(user.accountAddress, trigger, cronString);
+
+                (address target, bytes memory handler, Spec memory spec) =
+                    abi.decode(encodedJob, (address, bytes, Spec));
+                upkeep.createCronJobFromEncodedSpec(target, handler, abi.encode(spec));
+                user.upkeepDetails.jobId++;
+            }
             borrowGHO(owner, amount);
             user.currentTier = nextTier;
-            user.validUntil = block.timestamp + 30 days;
+            if (nextTier == 0) {
+                user.validUntil = type(uint256).max;
+            } else {
+                user.validUntil = block.timestamp + 30 days;
+            }
             _setTokenURI(tokenId, _buildURI(tokenId, nextTier));
         }
     }
@@ -192,14 +266,14 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         require(user.accountAddress != address(0), "GHOTunes: Account does not exist");
         require(msg.sender == user.accountAddress || msg.sender == owner, "GHOTunes: Only Account or Owner can renew");
 
-        uint256 upkeepId = user.upkeepDetails.upkeepId;
-        IKeeperRegistry keeperRegistry = IKeeperRegistry(KeeperRegistrySepolia);
-        keeperRegistry.getForwarder(upkeepId).getRegistry().pauseUpkeep(upkeepId);
-        uint96 balance = keeperRegistry.getForwarder(upkeepId).getRegistry().getBalance(upkeepId);
+        address upkeepAddress = user.upkeepDetails.upkeepAddress;
+        CronUpkeep upkeep = CronUpkeep(payable(upkeepAddress));
+        upkeep.pause();
 
         user.currentTier = 0;
         user.nextTier = 0;
         user.validUntil = type(uint256).max;
+        _setTokenURI(tokenId, _buildURI(tokenId, 0));
     }
 
     // The following functions are overrides required by Solidity.

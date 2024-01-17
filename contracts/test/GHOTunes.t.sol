@@ -75,8 +75,8 @@ contract GHOTunesTest is Test {
         vm.startPrank(user1.addr);
         vm.deal(user1.addr, 100 ether);
 
-        uint256 DURATION_IN_MONTHS = 2;
-        uint256 ethRequired = tunes.calculateETHRequired(1);
+        uint256 DURATION_IN_MONTHS = 12;
+        //uint256 ethRequired = tunes.calculateETHRequired(1);
 
         // Get Signatures
         GHOTunes.Signature memory wETHPermit =
@@ -90,7 +90,7 @@ contract GHOTunesTest is Test {
 
         tunes.subscribeWithETH{ value: 1 ether }(user1.addr, 1, DURATION_IN_MONTHS, wETHPermit, ghoPermit);
 
-        (uint8 c, uint8 n, address a, uint256 v, IGhoTunes.UpkeepDetails memory details) = tunes.accounts(user1.addr);
+        (uint8 c,, address a, uint256 v, IGhoTunes.UpkeepDetails memory details) = tunes.accounts(user1.addr);
         console2.log("");
         console2.log("========= Subscribing =========");
         console2.log("");
@@ -100,7 +100,6 @@ contract GHOTunesTest is Test {
         console2.log("Current Tier: ", cName);
         console2.log("Valid Until: ", v);
         console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
-
         console2.log("");
         console2.log("========= Forwarding 1 month =========");
 
@@ -113,24 +112,91 @@ contract GHOTunesTest is Test {
         vm.startPrank(details.forwarderAddress);
         IAccount account = IAccount(a);
         account.performUpkeep();
-        (uint8 newC, uint8 newN,, uint256 newV,) = tunes.accounts(user1.addr);
+        (uint8 newC,,, uint256 newV,) = tunes.accounts(user1.addr);
         console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
         console2.log("");
         (string memory newCName,,) = tunes.tiers(newC);
         console2.log("Updated Tier: ", newCName);
         console2.log("Updated Valid Until: ", newV);
         vm.stopPrank();
-    }
 
-    function atest_subscribe() external {
         vm.startPrank(user1.addr);
-        tunes.subscribe(user1.addr, 0);
+        console2.log("");
+        console2.log("========= Tier Change =========");
+        console2.log("");
+        console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
+        tunes.changeTier(0, 2);
+        (string memory n,,) = tunes.tiers(2);
+        console2.log("User Changed Tier to: ", n);
+        vm.warp(block.timestamp + 30 days);
+        console2.log("");
+        console2.log("========= Forwarding 1 month =========");
+        console2.log("Chainlink Upkeep Calling renew on ERC-6551 Account...");
+        console2.log("");
         vm.stopPrank();
-    }
 
-    function atest_subscribeWithGHO() external {
+        vm.startPrank(details.forwarderAddress);
+        account.performUpkeep();
+        (uint8 nc,,, uint256 nv,) = tunes.accounts(user1.addr);
+        console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
+        console2.log("");
+        (string memory ncc,,) = tunes.tiers(nc);
+        console2.log("Updated Tier: ", ncc);
+        console2.log("Updated Valid Until: ", nv);
+        vm.stopPrank();
+
         vm.startPrank(user1.addr);
-        tunes.subscribeWithGHO(user1.addr, 0);
+        console2.log("");
+        console2.log("========= Migrate to Base Tier =========");
+        console2.log("");
+        console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
+        tunes.changeTier(0, 0);
+        (string memory nn,,) = tunes.tiers(0);
+        console2.log("User Changed Tier to: ", nn);
+        console2.log("Tier change will happen on next billing");
+        vm.warp(block.timestamp + 30 days);
+        console2.log("");
+        console2.log("========= Forwarding 1 month =========");
+
+        console2.log("Chainlink Upkeep Calling renew on ERC-6551 Account...");
+        console2.log("");
+        vm.stopPrank();
+
+        vm.startPrank(details.forwarderAddress);
+        account.performUpkeep();
+        (uint8 nnc,,, uint256 nnv,) = tunes.accounts(user1.addr);
+        console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
+        console2.log("");
+        (string memory nccc,,) = tunes.tiers(nnc);
+        console2.log("Updated Tier: ", nccc);
+        console2.log("Updated Valid Until: ", nnv);
+        vm.stopPrank();
+
+        vm.startPrank(user1.addr);
+        console2.log("");
+        console2.log("========= Promote to Silver Again =========");
+        console2.log("");
+        console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
+        tunes.changeTier(0, 1);
+        (string memory nn1,,) = tunes.tiers(1);
+        console2.log("User Changed Tier to: ", nn1);
+        console2.log("Tier change will happen on next billing");
+        vm.warp(block.timestamp + 30 days);
+        console2.log("");
+        console2.log("========= Forwarding 1 month =========");
+
+        console2.log("Chainlink Upkeep Calling renew on ERC-6551 Account...");
+        console2.log("");
+        vm.stopPrank();
+
+        vm.startPrank(details.forwarderAddress);
+        account.performUpkeep();
+        (uint8 nnc1,,, uint256 nnv1,) = tunes.accounts(user1.addr);
+        console2.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
+        console2.log("");
+        (string memory nccc1,,) = tunes.tiers(nnc1);
+        console2.log("Updated Tier: ", nccc1);
+        console2.log("Updated Valid Until: ", nnv1);
         vm.stopPrank();
     }
 

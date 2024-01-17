@@ -75,7 +75,7 @@ abstract contract GHOTunesBase is IGhoTunes {
 
     // Chainlink Contracts
     ICronUpkeepFactory public cronUpkeepFactory = ICronUpkeepFactory(CRON_UPKEEP_FACTORY_SEPOLIA);
-
+    IKeeperRegistry keeperRegistry = IKeeperRegistry(KeeperRegistrySepolia);
     IAutomationRegistrar public automationRegistrar = IAutomationRegistrar(AUTOMATION_REGISTRAR_SEPOLIA);
     IERC677 public linkToken = IERC677(LINK_TOKEN_SEPOLIA);
 
@@ -135,9 +135,9 @@ abstract contract GHOTunesBase is IGhoTunes {
         require(success, "GHOTunes: Failed to approve LINK");
 
         uint256 upkeepId = automationRegistrar.registerUpkeep(registrationParams);
-        IKeeperRegistry keeperRegistry = IKeeperRegistry(KeeperRegistrySepolia);
 
         UpkeepDetails memory upkeepDetails = UpkeepDetails({
+            jobId: 1,
             upkeepAddress: address(cronUpkeep),
             forwarderAddress: address(keeperRegistry.getForwarder(upkeepId)),
             upkeepId: upkeepId
