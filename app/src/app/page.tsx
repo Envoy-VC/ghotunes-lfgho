@@ -1,15 +1,10 @@
-'use client';
-
 import React from 'react';
-import { ConnectKitButton } from 'connectkit';
+import { Navbar } from '~/components';
 
 const Home = () => {
 	return (
 		<div className=''>
-			<ConnectKitButton />
-			<div className='text-primary font-mario text-6xl tracking-wider'>
-				GHO Tunes
-			</div>
+			<Navbar />
 		</div>
 	);
 };

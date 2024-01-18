@@ -10,9 +10,9 @@ export default {
 				mario: ['Super Mario', 'sans-serif'],
 			},
 			colors: {
-				background: '#fafae3',
-				primary: '#f76263',
-				secondary: '#f77d79',
+				background: '#',
+				primary: '#',
+				secondary: '#f7d79',
 			},
 		},
 	},
