@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-page-custom-font */
 import '~/styles/globals.css';
 
 import { Inter } from 'next/font/google';
@@ -20,6 +21,14 @@ export default function RootLayout({
 }) {
 	return (
 		<html lang='en'>
+			<head>
+				<link rel='preconnect' href='https://fonts.googleapis.com' />
+				<link rel='preconnect' href='https://fonts.gstatic.com' />
+				<link
+					href='https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap'
+					rel='stylesheet'
+				/>
+			</head>
 			<body className={`font-sans ${inter.variable} hideScrollbar`}>
 				{children}
 			</body>

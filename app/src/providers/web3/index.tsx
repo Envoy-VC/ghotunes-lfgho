@@ -15,6 +15,8 @@ import {
 } from 'connectkit';
 supportedConnectors.push(...supportedSocialConnectors);
 
+import theme from '~/assets/theme.json';
+
 import { sepolia } from 'wagmi/chains';
 
 import {
@@ -64,7 +66,14 @@ interface Props {
 const Web3Provider = ({ children }: Props) => {
 	return (
 		<WagmiConfig config={config}>
-			<ConnectKitProvider>{children}</ConnectKitProvider>
+			<ConnectKitProvider
+				customTheme={{ ...theme }}
+				options={{
+					embedGoogleFonts: true,
+				}}
+			>
+				{children}
+			</ConnectKitProvider>
 		</WagmiConfig>
 	);
 };

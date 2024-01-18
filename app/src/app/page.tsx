@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { Navbar } from '~/components';
 
 import { BackgroundImage } from '~/assets';
+import { Pricing } from '~/sections';
 
 const Home = () => {
 	return (
@@ -15,6 +16,7 @@ const Home = () => {
 				/>
 				<Navbar />
 			</div>
+			<Pricing />
 		</div>
 	);
 };

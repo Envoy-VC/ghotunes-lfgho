@@ -7,6 +7,10 @@
 	src: url('../../public/fonts/bold-font.ttf');
 }
 
+html {
+	scroll-behavior: smooth;
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .hideScrollbar::-webkit-scrollbar {
 	display: none;
