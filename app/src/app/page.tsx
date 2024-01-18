@@ -1,23 +1,29 @@
 import React from 'react';
 import Image from 'next/image';
-import { Navbar } from '~/components';
+import { Navbar, ImagesSlider } from '~/components';
 
-import { BackgroundImage } from '~/assets';
+import { backgroundImages } from '~/assets';
 import { Pricing } from '~/sections';
 
 const Home = () => {
 	return (
-		<div className=''>
+		<main className='bg-[#6A6A6A]'>
 			<div className='relative h-screen'>
-				<Image
+				<ImagesSlider
+					images={backgroundImages}
+					autoplay
+					// eslint-disable-next-line react/no-children-prop
+					children={<>d</>}
+				/>
+				{/* <Image
 					src={BackgroundImage}
 					alt='Background Image'
 					className='absolute top-0 h-screen w-full object-cover'
-				/>
+				/> */}
 				<Navbar />
 			</div>
 			<Pricing />
-		</div>
+		</main>
 	);
 };
 
