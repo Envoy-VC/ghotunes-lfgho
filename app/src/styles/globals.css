@@ -3,10 +3,17 @@
 @tailwind utilities;
 
 @font-face {
-	font-family: 'Super Mario';
-	src: url('../../public/fonts/SuperMario256.ttf');
+	font-family: 'Bold Font';
+	src: url('../../public/fonts/bold-font.ttf');
 }
 
-body {
-	background-color: #fafae3;
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hideScrollbar::-webkit-scrollbar {
+	display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hideScrollbar {
+	-ms-overflow-style: none; /* IE and Edge */
+	scrollbar-width: none; /* Firefox */
 }

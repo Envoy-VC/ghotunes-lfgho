@@ -7,7 +7,7 @@ export default {
 		extend: {
 			fontFamily: {
 				sans: ['var(--font-sans)', ...fontFamily.sans],
-				mario: ['Super Mario', 'sans-serif'],
+				boldFont: ['Bold Font', 'sans-serif'],
 			},
 			colors: {
 				background: '#',

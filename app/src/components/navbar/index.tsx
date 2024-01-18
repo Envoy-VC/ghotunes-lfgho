@@ -3,27 +3,23 @@
 import React from 'react';
 
 import { ConnectKitButton } from 'connectkit';
-import { useAudius } from '~/hooks';
+import Link from 'next/link';
 
 const Navbar = () => {
-	const { getTrendingTracks, getStreamLink } = useAudius();
 	return (
-		<div className='flex h-[7dvh] items-center justify-between border-2 px-8'>
-			<div className='font-mario text-4xl tracking-wider text-primary'>
+		<div className='z-[100] flex h-[10dvh] items-center justify-between border-2 px-8'>
+			<div className='font-boldFont z-[100]  text-4xl tracking-wider text-gray-100'>
 				GHO Tunes
 			</div>
-			<ConnectKitButton />
-			<button
-				onClick={() => {
-					void getStreamLink('MgrM3b9');
-					console.log('audius');
-				}}
-			>
-				click
-			</button>
-			<audio controls>
-				<source src='https://audius-discovery-1.cultur3stake.com/v1/tracks/MgrM3b9/stream' />
-			</audio>
+			<div className='flex items-center gap-5'>
+				<Link
+					href='#pricing'
+					className='z-[100] rounded-xl bg-slate-50 px-4 py-[6px] font-bold uppercase text-[#61615F]'
+				>
+					Pricing
+				</Link>
+				<ConnectKitButton />
+			</div>
 		</div>
 	);
 };
