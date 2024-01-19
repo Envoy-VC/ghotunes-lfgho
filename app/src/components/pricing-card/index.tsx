@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { Meteors } from '../meteor';
 
 import { FaCheck } from 'react-icons/fa6';

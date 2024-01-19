@@ -5,6 +5,7 @@ import { useAudius } from '~/hooks';
 import TrackCard from '~/components/track-card';
 
 import type { Track } from '~/types/audius';
+import { AiOutlineLoading } from 'react-icons/ai';
 
 const TopCharts = () => {
 	const { getTrendingTracks } = useAudius();
@@ -29,9 +30,15 @@ const TopCharts = () => {
 				<div className='w-full border-[1px] border-gray-300'></div>
 			</div>
 			<div className='my-4 flex w-full flex-col gap-2'>
-				{trendingTracks.map((track, i) => {
-					return <TrackCard key={i} {...track} />;
-				})}
+				{trendingTracks.length === 0 ? (
+					<div className='flex w-full flex-row items-center justify-center'>
+						<AiOutlineLoading className='animate-spin text-4xl text-[#1D2C39]' />
+					</div>
+				) : (
+					trendingTracks.map((track, i) => {
+						return <TrackCard key={i} {...track} />;
+					})
+				)}
 			</div>
 		</div>
 	);

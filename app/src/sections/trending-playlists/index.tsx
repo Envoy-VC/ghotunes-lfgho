@@ -8,6 +8,8 @@ import PlaylistCard from '~/components/playlist-card';
 import { FaCaretLeft, FaCaretRight } from 'react-icons/fa6';
 import type { Playlist } from '~/types/audius';
 
+import { AiOutlineLoading } from 'react-icons/ai';
+
 const TrendingPlaylists = () => {
 	const { getTrendingPlaylists } = useAudius();
 
@@ -66,9 +68,15 @@ const TrendingPlaylists = () => {
 				className='hideScrollbar my-4 flex w-full flex-row gap-4 overflow-scroll'
 				ref={ref}
 			>
-				{trendingPlaylists.map((playlist, i) => {
-					return <PlaylistCard key={`playlist-${i}`} {...playlist} />;
-				})}
+				{trendingPlaylists.length === 0 ? (
+					<div className='flex w-full flex-row items-center justify-center'>
+						<AiOutlineLoading className='animate-spin text-4xl text-[#1D2C39]' />
+					</div>
+				) : (
+					trendingPlaylists.map((playlist, i) => {
+						return <PlaylistCard key={`playlist-${i}`} {...playlist} />;
+					})
+				)}
 			</div>
 		</div>
 	);
