@@ -4,9 +4,9 @@ export type AudiusResponse<T> = {
 
 export type Track = {
 	artwork?: {
-		_1000x1000?: string;
-		_150x150?: string;
-		_480x480?: string;
+		'1000x1000'?: string;
+		'150x150'?: string;
+		'480x480'?: string;
 	};
 	description?: string;
 	downloadable?: boolean;
@@ -47,9 +47,9 @@ export type Track = {
 		name: string;
 		playlistCount: number;
 		profilePicture?: {
-			_1000x1000?: string;
-			_150x150?: string;
-			_480x480?: string;
+			'1000x1000'?: string;
+			'150x150'?: string;
+			'480x480'?: string;
 		};
 		repostCount: number;
 		splWallet: string;
@@ -151,9 +151,9 @@ export type Playlist = {
 
 export type Album = {
 	artwork?: {
-		_1000x1000?: string;
-		_150x150?: string;
-		_480x480?: string;
+		'1000x1000'?: string;
+		'150x150'?: string;
+		'480x480'?: string;
 	};
 	coverArtSizes?: string;
 	description?: string;

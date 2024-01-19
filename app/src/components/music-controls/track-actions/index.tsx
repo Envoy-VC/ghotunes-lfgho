@@ -13,12 +13,20 @@ import {
 } from 'react-icons/fa6';
 import { TbPlaylistAdd } from 'react-icons/tb';
 
+import { useTrack } from '~/stores/track';
+
 const TrackActions = () => {
+	const { track, pause } = useTrack();
 	const [value, setValue] = React.useState(75);
 
 	const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setValue(parseInt(e.target.value));
 	};
+
+	const onPause = () => {
+		pause();
+	};
+	
 	return (
 		<div className='mx-16 w-1/3'>
 			<div className='flex flex-row items-center justify-end gap-8'>
