@@ -6,10 +6,10 @@ import { Pricing } from '~/sections';
 
 const Home = () => {
 	return (
-		<main className='h-screen bg-black/95 text-white'>
+		<div className='relative h-screen bg-black/95 text-white'>
 			<Navbar />
 			<Pricing />
-		</main>
+		</div>
 	);
 };
 

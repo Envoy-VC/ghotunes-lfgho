@@ -29,7 +29,7 @@ export default function RootLayout({
 					rel='stylesheet'
 				/>
 			</head>
-			<body className={`font-sans ${inter.variable} hideScrollbar`}>
+			<body className={`font-sans ${inter.variable} hideScrollbar bg-black/95`}>
 				{children}
 			</body>
 		</html>
