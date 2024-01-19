@@ -1,14 +1,27 @@
+/* eslint-disable @next/next/no-img-element */
+
 import React from 'react';
 import { FaPlayCircle } from 'react-icons/fa';
 
 import ControlButton from '../music-controls/control-button';
 
-const PlaylistCard = () => {
+import type { Playlist } from '~/types/audius';
+
+const PlaylistCard = ({ artwork, playlistName, description }: Playlist) => {
+	console.log({
+		artwork,
+		playlistName,
+		description,
+	});
 	return (
 		<div className='flex flex-col gap-4'>
 			<div className='relative aspect-square min-w-[300px] rounded-xl'>
 				<img
-					src='https://music351204796.files.wordpress.com/2020/12/niki.jpg?w=1024'
+					src={
+						artwork?.['480x480'] ??
+						artwork?.['150x150'] ??
+						artwork?.['1000x1000']
+					}
 					alt='cover'
 					className='h-full w-full rounded-xl object-cover'
 				/>
@@ -20,8 +33,10 @@ const PlaylistCard = () => {
 				</div>
 			</div>
 			<div className='flex flex-col'>
-				<div className='text-lg font-bold text-[#1D2C39]'>Playlist Name</div>
-				<div className='text-[#536171] text-xs font-semibold'>Playlist Description</div>
+				<div className='text-lg font-bold text-[#1D2C39]'>{playlistName}</div>
+				<div className='text-xs font-semibold text-[#536171]'>
+					{description ?? ''}
+				</div>
 			</div>
 		</div>
 	);

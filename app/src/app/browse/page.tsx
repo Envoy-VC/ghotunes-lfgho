@@ -3,7 +3,7 @@ import { MusicControls, Navbar } from '~/components';
 
 import { TopCharts, TrendingPlaylists } from '~/sections';
 
-const Home = () => {
+const Browse = () => {
 	return (
 		<div className='relative mb-[10vh] h-screen overflow-scroll bg-[#e8eaec]'>
 			<Navbar />
@@ -16,4 +16,4 @@ const Home = () => {
 	);
 };
 
-export default Home;
+export default Browse;

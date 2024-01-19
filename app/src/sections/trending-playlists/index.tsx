@@ -2,11 +2,29 @@
 
 import React from 'react';
 
+import { useAudius } from '~/hooks';
 import PlaylistCard from '~/components/playlist-card';
 
 import { FaCaretLeft, FaCaretRight } from 'react-icons/fa6';
+import type { Playlist } from '~/types/audius';
 
 const TrendingPlaylists = () => {
+	const { getTrendingPlaylists } = useAudius();
+
+	const [trendingPlaylists, setTrendingPlaylists] = React.useState<Playlist[]>(
+		[]
+	);
+
+	React.useEffect(() => {
+		getTrendingPlaylists()
+			.then((res) => {
+				setTrendingPlaylists(res);
+			})
+			.catch((err) => {
+				console.log(err);
+			});
+	}, []);
+
 	const ref = React.useRef<HTMLDivElement>(null);
 
 	const onClick = (direction: 'right' | 'left') => {
@@ -48,11 +66,9 @@ const TrendingPlaylists = () => {
 				className='hideScrollbar my-4 flex w-full flex-row gap-4 overflow-scroll'
 				ref={ref}
 			>
-				{Array(20)
-					.fill(true)
-					.map((_, i) => {
-						return <PlaylistCard key={i} />;
-					})}
+				{trendingPlaylists.map((playlist, i) => {
+					return <PlaylistCard key={`playlist-${i}`} {...playlist} />;
+				})}
 			</div>
 		</div>
 	);

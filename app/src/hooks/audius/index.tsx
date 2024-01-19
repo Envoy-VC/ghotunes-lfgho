@@ -1,32 +1,26 @@
 import React from 'react';
+import axios from 'axios';
 
-import type { AudiusResponse, Track } from '~/types/audius';
+import type { AudiusResponse, Track, Playlist } from '~/types/audius';
 
 const useAudius = () => {
-	const url = 'https://audius-discovery-1.cultur3stake.com/v1';
+	const audius = axios.create({
+		baseURL: 'https://audius-discovery-1.cultur3stake.com/v1/',
+		timeout: 10000,
+	});
 
 	const getTrendingTracks = async () => {
-		const res = await fetch(`${url}/tracks/trending`);
-		const data = (await res.json()) as AudiusResponse<Track[]>;
-		console.log(data);
-		return data.data;
+		const res = await audius.get('/tracks/trending?app_name=gho_tunes');
+		const tracks = res.data as AudiusResponse<Track[]>;
+		return tracks.data;
 	};
 
-	const getStreamLink = async (trackId: string) => {
-		try {
-			const res = await fetch(`${url}/tracks/${trackId}/stream`);
-			res.headers.forEach((v, k) => {
-				console.log(`${k}: ${v}`);
-			});
-			console.log(await res.json());
-			const data = (await res.json()) as AudiusResponse<string>;
-			console.log(data);
-			return data.data;
-		} catch (error) {
-			console.log(error);
-		}
+	const getTrendingPlaylists = async () => {
+		const res = await audius.get('/playlists/trending?app_name=gho_tunes');
+		const data = res.data as AudiusResponse<Playlist[]>;
+		return data.data;
 	};
-	return { getTrendingTracks, getStreamLink };
+	return { getTrendingTracks, getTrendingPlaylists };
 };
 
 export default useAudius;
