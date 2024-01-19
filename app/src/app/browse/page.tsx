@@ -1,10 +1,11 @@
 import React from 'react';
-import { Navbar } from '~/components';
+import { MusicControls, Navbar } from '~/components';
 
 const Home = () => {
 	return (
-		<div className='h-screen'>
+		<div className='relative h-screen bg-[#e8eaec]'>
 			<Navbar />
+			<MusicControls />
 		</div>
 	);
 };
