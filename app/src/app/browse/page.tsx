@@ -1,14 +1,10 @@
 import React from 'react';
-import Image from 'next/image';
 import { Navbar } from '~/components';
-
-import { Pricing } from '~/sections';
 
 const Home = () => {
 	return (
-		<div className='h-screen bg-black/95 text-white'>
+		<div className='h-screen'>
 			<Navbar />
-			<Pricing />
 		</div>
 	);
 };
