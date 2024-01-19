@@ -2,7 +2,7 @@ import React from 'react';
 
 const Pricing = () => {
 	return (
-		<section id='pricing' className='h-screen bg-gray-100'>
+		<section id='pricing' className=''>
 			Pricing
 		</section>
 	);
