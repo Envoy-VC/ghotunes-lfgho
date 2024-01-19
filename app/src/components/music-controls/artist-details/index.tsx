@@ -4,12 +4,20 @@
 import React from 'react';
 
 import { MusicPlaceholder } from '~/assets';
+
 import { useTrack } from '~/stores/track';
 
-const ArtistDetails = () => {
+import { formatTrackDuration } from '~/utils';
+
+interface Props {
+	currentTime: number;
+	duration: number;
+}
+
+const ArtistDetails = ({ currentTime, duration }: Props) => {
 	const { details } = useTrack();
 	return (
-		<div className='flex w-1/3 flex-row items-center gap-8'>
+		<div className='flex w-1/3 flex-row items-center justify-between gap-8'>
 			<div className='flex flex-row items-start gap-3'>
 				<div className='h-16 w-16'>
 					<img
@@ -32,6 +40,15 @@ const ArtistDetails = () => {
 					<div className='text-sm font-semibold text-gray-400'>
 						{details?.user.name ?? 'User Name'}
 					</div>
+				</div>
+			</div>
+			<div className='flex flex-row items-center gap-1 px-8'>
+				<div className='text-sm font-semibold text-gray-400'>
+					{formatTrackDuration(Number(currentTime.toFixed(0)))}
+				</div>
+				<div className='text-sm font-semibold text-gray-400'>/</div>
+				<div className='text-sm font-semibold text-gray-400'>
+					{formatTrackDuration(Number(duration.toFixed(0)))}
 				</div>
 			</div>
 		</div>
