@@ -33,7 +33,6 @@ const TrendingPlaylists = () => {
 						Here are some of the trending playlists
 					</div>
 				</div>
-				<div className='w-full border-[1px] border-gray-300' />
 				<div className='flex flex-row items-center'>
 					<FaCaretLeft
 						className='cursor-pointer text-3xl text-[#1D2C39]'
