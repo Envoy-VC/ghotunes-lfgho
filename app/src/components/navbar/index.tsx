@@ -20,12 +20,14 @@ const Navbar = () => {
 				GHO Tunes
 			</Link>
 			<div className='flex items-center gap-5'>
-				<Link
-					href='/pricing'
-					className='z-[100] rounded-xl bg-slate-50 px-4 py-[6px] font-bold uppercase text-[#61615F]'
-				>
-					Pricing
-				</Link>
+				{pathname !== '/browse' && (
+					<Link
+						href='/pricing'
+						className='z-[100] rounded-xl bg-slate-50 px-4 py-[6px] font-bold uppercase text-[#61615F]'
+					>
+						Pricing
+					</Link>
+				)}
 				<div className='z-[100]'>
 					<ConnectKitButton />
 				</div>

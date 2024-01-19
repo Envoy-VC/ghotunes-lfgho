@@ -1,4 +1,7 @@
+'use client';
+
 import React from 'react';
+import { useRouter } from 'next/router';
 import { Meteors } from '../meteor';
 
 import { FaCheck } from 'react-icons/fa6';
@@ -6,6 +9,13 @@ import { FaCheck } from 'react-icons/fa6';
 import type { Tier } from '~/types';
 
 const PricingCard = ({ name, description, price, features }: Tier) => {
+	const router = useRouter();
+	const onClick = () => {
+		if (price === 0) {
+			void router.push('/browse');
+		}
+	};
+
 	return (
 		<div className='w-full'>
 			<div className='relative flex h-full w-full flex-col items-start justify-center overflow-hidden rounded-2xl border border-gray-800 bg-black/75 px-4 py-8 shadow-xl'>
@@ -28,8 +38,9 @@ const PricingCard = ({ name, description, price, features }: Tier) => {
 				<button
 					className='mt-8 w-full rounded-xl bg-zinc-200 px-8 py-4 font-semibold text-black/80 transition-all duration-300 ease-in-out hover:bg-zinc-300'
 					type='button'
+					onClick={onClick}
 				>
-					Subscribe
+					{price === 0 ? 'Go to App' : 'Subscribe'}
 				</button>
 				<Meteors />
 			</div>
