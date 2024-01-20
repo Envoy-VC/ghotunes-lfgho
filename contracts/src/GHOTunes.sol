@@ -25,7 +25,14 @@ import { IToken } from "./token/Token.sol";
 import "./interfaces/IGhoTunes.sol";
 
 contract GHOTunes is IGhoTunes, GHOTunesBase {
-    constructor(address _accountRegistry, address _implementation, TIER[] memory _tiers, address _token) {
+    constructor(
+        address _owner,
+        address _accountRegistry,
+        address _implementation,
+        TIER[] memory _tiers,
+        address _token
+    ) {
+        owner = _owner;
         accountRegistry = IERC6551Registry(_accountRegistry);
         implementation = _implementation;
         token = IToken(_token);
@@ -204,5 +211,10 @@ contract GHOTunes is IGhoTunes, GHOTunesBase {
         user.nextTier = 0;
         user.validUntil = type(uint256).max;
         token.setTokenURI(tokenId, URILibrary._buildURI(tokenId, tiers[0]));
+    }
+
+    function withdrawLink() external {
+        uint256 balance = TunesLibrary.linkToken.balanceOf(address(this));
+        TunesLibrary.linkToken.transfer(owner, balance);
     }
 }

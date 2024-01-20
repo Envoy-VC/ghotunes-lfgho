@@ -11,9 +11,7 @@ import "../src/interfaces/IGhoTunes.sol";
 
 contract Deploy is Script {
     function run() external {
-        // uint256 deployerPrivateKey = vm.envUint("PK");
-        uint256 deployerPrivateKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
-
+        uint256 deployerPrivateKey = vm.envUint("PK");
         address owner = vm.addr(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
         console.log("Deploying GHOTunes with account", owner);
@@ -24,11 +22,29 @@ contract Deploy is Script {
 
         // TODO: Update Images
         TIER[] memory tiers = new TIER[](3);
-        tiers[0] = TIER({ name: "Free", image: "bronze.png", price: 0 ether }); // Free
-        tiers[1] = TIER({ name: "Silver", image: "silverImage.png", price: 5 ether }); // 5 GHO
-        tiers[2] = TIER({ name: "Gold", image: "goldImage.png", price: 10 ether }); // 10 GHO
 
-        GHOTunes tunes = new GHOTunes(address(accountRegistry), address(implementation), tiers, address(token));
+        // Free Tier 0 GHO
+        tiers[0] = TIER({
+            name: "Free",
+            image: "ipfs://bafybeid5lejwicuka3mi7ly3dj4lfggzzxrvxdvkxsuqszqvqzex7sf7iy",
+            price: 0 ether
+        });
+
+        // Silver Tier 5 GHO
+        tiers[1] = TIER({
+            name: "Silver",
+            image: "ipfs://bafybeibzjt66ujqta3sz35bk5zzfmva5jy4ans6h2tqwypgqkrtf5ufd6u",
+            price: 5 ether
+        });
+
+        // Gold Tier 10 GHO
+        tiers[2] = TIER({
+            name: "Gold",
+            image: "ipfs://bafybeih622mxsboh7tauupuj6snvemxszpx3cuy2dblvvy5gzrnuv7gzte",
+            price: 10 ether
+        });
+
+        GHOTunes tunes = new GHOTunes(owner, address(accountRegistry), address(implementation), tiers, address(token));
 
         token.setTunes(address(tunes));
 

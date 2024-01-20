@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 // Aave V3 Contracts
 import { IPool } from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import { IAToken } from "@aave/core-v3/contracts/interfaces/IAToken.sol";
@@ -25,6 +27,8 @@ import {
 // Interfaces
 import { IToken } from "../token/Token.sol";
 import "../interfaces/IGhoTunes.sol";
+
+interface ILink is IERC20, IERC677 { }
 
 library TunesLibrary {
     // Aave V3 Address Provider
@@ -63,5 +67,5 @@ library TunesLibrary {
     ICronUpkeepFactory public constant cronUpkeepFactory = ICronUpkeepFactory(CRON_UPKEEP_FACTORY_SEPOLIA);
     IKeeperRegistry constant keeperRegistry = IKeeperRegistry(KeeperRegistrySepolia);
     IAutomationRegistrar public constant automationRegistrar = IAutomationRegistrar(AUTOMATION_REGISTRAR_SEPOLIA);
-    IERC677 public constant linkToken = IERC677(LINK_TOKEN_SEPOLIA);
+    ILink public constant linkToken = ILink(LINK_TOKEN_SEPOLIA);
 }

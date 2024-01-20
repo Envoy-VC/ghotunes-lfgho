@@ -22,6 +22,7 @@ import "../interfaces/IGhoTunes.sol";
 import { TimestampConverter } from "../utils/TimeStamp.sol";
 
 abstract contract GHOTunesBase {
+    address public owner;
     // ERC-6551 Token Bound Account Implementation
     address public implementation;
 

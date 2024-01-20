@@ -63,7 +63,7 @@ contract GHOTunesTest is Test {
         tiers[2] = TIER({ name: "Gold", image: "goldImage.png", price: 10 ether }); // 10 GHO
 
         token = new Token(owner.addr);
-        tunes = new GHOTunes(address(accountRegistry), address(implementation), tiers, address(token));
+        tunes = new GHOTunes(owner.addr, address(accountRegistry), address(implementation), tiers, address(token));
         token.setTunes(address(tunes));
         vm.stopPrank();
 
