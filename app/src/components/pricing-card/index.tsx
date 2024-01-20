@@ -2,13 +2,24 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
+
+import { useContractWrite, useAccount } from 'wagmi';
+
 import { Meteors } from '../meteor';
 
 import { FaCheck } from 'react-icons/fa6';
 
 import type { Tier } from '~/types';
+import { ABI } from '~/data/abi';
 
 const PricingCard = ({ name, description, price, features }: Tier) => {
+	const { address } = useAccount();
+	const { write: subscribeWithETH } = useContractWrite({
+		address: '0x766EcD241899AbA389a999D01527afd7B55F999D',
+		abi: ABI,
+		functionName: 'subscribeWithETH',
+	});
+
 	const router = useRouter();
 	const onClick = () => {
 		if (price === 0) {
