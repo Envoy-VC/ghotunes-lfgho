@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 library TimestampConverter {
+    using Strings for uint256;
+
+    function getCronString() public view returns (string memory) {
+        return string.concat("0 0 ", getDayOfMonth(block.timestamp).toString(), " * *");
+    }
+
     function getDayOfMonth(uint256 timestampInSeconds) public pure returns (uint256) {
         uint256 secondsInMinute = 60;
         uint256 secondsInHour = 60 * secondsInMinute;

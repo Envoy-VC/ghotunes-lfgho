@@ -1,47 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-
-// ERC-6551 Token Bound Accounts
-import { AccountRegistry } from "./accounts/AccountRegistry.sol";
-import { GHOTunesAccount } from "./accounts/Account.sol";
-
-// Aave V3 Contracts
-import { IAToken } from "@aave/core-v3/contracts/interfaces/IAToken.sol";
-import { AaveV3SepoliaAssets } from "aave-address-book/AaveV3Sepolia.sol";
-import { DebtTokenBase } from "@aave/core-v3/contracts/protocol/tokenization/base/DebtTokenBase.sol";
-
 // Base
 import { GHOTunesBase } from "./base/GHOTunesBase.sol";
 
+// ERC-6551 Token Bound Accounts
+import { IERC6551Registry } from "./interfaces/IERC6551Registry.sol";
+import { IAccount } from "./accounts/Account.sol";
+
+// Aave V3 Contracts
+import { AaveV3SepoliaAssets } from "aave-address-book/AaveV3Sepolia.sol";
+import { DebtTokenBase } from "@aave/core-v3/contracts/protocol/tokenization/base/DebtTokenBase.sol";
+
+// Chainlink Imports
+import { ICronUpkeep } from "./interfaces/chainlink/ICronUpkeep.sol";
+
+// Library Imports
+import { URILibrary } from "./lib/URI.sol";
+import { TunesLibrary } from "./lib/Tunes.sol";
+
 // Interfaces
 import { IGhoToken } from "./interfaces/IGhoToken.sol";
-import { IGhoTunes } from "./interfaces/IGhoTunes.sol";
-import {
-    IKeeperRegistry,
-    IAutomationForwarder,
-    IAutomationRegistryConsumer
-} from "./interfaces/chainlink/IKeeperRegistry.sol";
-import { CronUpkeep } from "@chainlink/contracts/src/v0.8/automation/upkeeps/CronUpkeep.sol";
+import { IToken } from "./token/Token.sol";
+import "./interfaces/IGhoTunes.sol";
 
-contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Ownable {
-    uint256 public _nextTokenId;
-
-    constructor(
-        address initialOwner,
-        address _accountRegistry,
-        address _implementation,
-        TIER[] memory _tiers
-    )
-        ERC721("GHO Tunes", "TUNES")
-        Ownable(initialOwner)
-    {
-        accountRegistry = AccountRegistry(_accountRegistry);
+contract GHOTunes is IGhoTunes, GHOTunesBase {
+    constructor(address _accountRegistry, address _implementation, TIER[] memory _tiers, address _token) {
+        accountRegistry = IERC6551Registry(_accountRegistry);
         implementation = _implementation;
+        token = IToken(_token);
 
         uint256 len = _tiers.length;
         totalTiers = len;
@@ -58,15 +45,12 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         require(tier < totalTiers, "GHOTunes: Invalid Tier");
 
         // Mint NFT
-        uint256 tokenId = _nextTokenId++;
-        string memory uri = _buildURI(tokenId, tier);
-        uint256 salt = 1;
-        _safeMint(user, tokenId);
-        _setTokenURI(tokenId, uri);
+        uint256 tokenId = token.mint(user, tiers[tier]);
 
         // Create ERC6551 Account
-        accountRegistry.createAccount(implementation, block.chainid, address(this), tokenId, salt, "");
-        address accountAddress = accountRegistry.account(implementation, block.chainid, address(this), tokenId, salt);
+        uint256 salt = 1;
+        accountRegistry.createAccount(implementation, block.chainid, address(token), tokenId, salt, "");
+        address accountAddress = accountRegistry.account(implementation, block.chainid, address(token), tokenId, salt);
 
         if (tiers[tier].price == 0) {
             accounts[user] = User({
@@ -80,8 +64,8 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         }
 
         UpkeepDetails memory upkeepDetails = createCronUpkeep(accountAddress);
-        GHOTunesAccount account = GHOTunesAccount(payable(accountAddress));
-        account.initialize(upkeepDetails.forwarderAddress);
+        IAccount account = IAccount(accountAddress);
+        account.initialize(upkeepDetails.forwarderAddress, address(this));
 
         accounts[user] = User({
             currentTier: tier,
@@ -94,7 +78,7 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
 
     function delegateGHO(address user, Signature memory permit, uint8 tier, uint256 durationInMonths) public {
         uint256 amount = tiers[tier].price;
-        vGHO.delegationWithSig(
+        TunesLibrary.vGHO.delegationWithSig(
             user, address(this), durationInMonths * amount, permit.deadline, permit.v, permit.r, permit.s
         );
     }
@@ -109,12 +93,12 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
 
     function subscribeWithGHO(address user, uint8 tier) external {
         uint256 amount = tiers[tier].price;
-        require(ghoToken.balanceOf(user) >= amount, "GHOTunes: Insufficient GHO");
-        require(ghoToken.allowance(user, address(this)) >= amount, "GHOTunes: Insufficient GHO Allowance");
+        require(TunesLibrary.ghoToken.balanceOf(user) >= amount, "GHOTunes: Insufficient GHO");
+        require(TunesLibrary.ghoToken.allowance(user, address(this)) >= amount, "GHOTunes: Insufficient GHO Allowance");
         require(accounts[user].accountAddress == address(0), "GHOTunes: Account already exists");
         require(tier < totalTiers, "GHOTunes: Invalid Tier");
 
-        ghoToken.transferFrom(user, address(this), amount);
+        TunesLibrary.ghoToken.transferFrom(user, address(this), amount);
         createAccount(user, tier);
     }
 
@@ -137,13 +121,19 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         uint256 amount = tiers[tier].price;
 
         // Supply ETH to Aave
-        wEthGateway.depositETH{ value: value }(address(aavePool), user, 0);
-        vWETH.delegationWithSig(
-            user, address(wEthGateway), value, wETHPermit.deadline, wETHPermit.v, wETHPermit.r, wETHPermit.s
+        TunesLibrary.wEthGateway.depositETH{ value: value }(address(TunesLibrary.aavePool), user, 0);
+        TunesLibrary.vWETH.delegationWithSig(
+            user,
+            address(TunesLibrary.wEthGateway),
+            value,
+            wETHPermit.deadline,
+            wETHPermit.v,
+            wETHPermit.r,
+            wETHPermit.s
         );
 
         // Borrow GHO
-        vGHO.delegationWithSig(
+        TunesLibrary.vGHO.delegationWithSig(
             user, address(this), durationInMonths * amount, ghoPermit.deadline, ghoPermit.v, ghoPermit.r, ghoPermit.s
         );
         borrowGHO(user, amount);
@@ -151,14 +141,14 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
     }
 
     function changeTier(uint256 tokenId, uint8 nextTier) public {
-        address owner = ownerOf(tokenId);
+        address owner = token.ownerOf(tokenId);
         require(owner == msg.sender, "GHOTunes: Only owner can change tier");
         User storage user = accounts[owner];
         user.nextTier = nextTier;
     }
 
     function renew(uint256 tokenId) external {
-        address owner = ownerOf(tokenId);
+        address owner = token.ownerOf(tokenId);
         User storage user = accounts[owner];
         require(user.accountAddress != address(0), "GHOTunes: Account does not exist");
         require(msg.sender == user.accountAddress || msg.sender == owner, "GHOTunes: Only Account or Owner can renew");
@@ -168,95 +158,51 @@ contract GHOTunes is GHOTunesBase, ERC721, ERC721URIStorage, ERC721Pausable, Own
         uint256 amount = tiers[nextTier].price;
 
         if (nextTier == currentTier) {
-            // Cannot renew for free tier
-            if (nextTier == 0) {
-                return;
-            }
-            borrowGHO(owner, amount);
-            user.validUntil = block.timestamp + 30 days;
+            require(nextTier > 0, "GHOTunes: Invalid Tier");
         } else if (nextTier > currentTier) {
             if (currentTier == 0) {
                 if (user.upkeepDetails.upkeepAddress == address(0)) {
-                    // Upgrading for Free to Paid for first time, Create Upkeep
                     UpkeepDetails memory upkeepDetails = createCronUpkeep(user.accountAddress);
                     user.upkeepDetails = upkeepDetails;
                 } else {
-                    // Update Upkeep for new CRON Expression
                     updateCronUpkeep(owner);
                     address upkeepAddress = user.upkeepDetails.upkeepAddress;
-                    CronUpkeep upkeep = CronUpkeep(payable(upkeepAddress));
+                    ICronUpkeep upkeep = ICronUpkeep(upkeepAddress);
                     try upkeep.unpause() { } catch { }
                 }
             } else {
-                // Update Upkeep for new CRON Expression
                 if (msg.sender == user.accountAddress) {
                     updateCronUpkeep(owner);
                 }
             }
-            borrowGHO(owner, amount);
-            user.currentTier = nextTier;
-            user.validUntil = block.timestamp + 30 days;
-            _setTokenURI(tokenId, _buildURI(tokenId, nextTier));
         } else {
-            // User is Downgrading Tier
             if (msg.sender == user.accountAddress && nextTier > 0) {
-                // If Manually then update Upkeep for new CRON Expression
                 updateCronUpkeep(owner);
             }
-            borrowGHO(owner, amount);
-            user.currentTier = nextTier;
-            if (nextTier == 0) {
-                user.validUntil = type(uint256).max;
-            } else {
-                user.validUntil = block.timestamp + 30 days;
-            }
-            _setTokenURI(tokenId, _buildURI(tokenId, nextTier));
         }
+        borrowGHO(owner, amount);
+        user.currentTier = nextTier;
+        if (nextTier == 0) {
+            user.validUntil = type(uint256).max;
+        } else {
+            user.validUntil = block.timestamp + 30 days;
+        }
+        token.setTokenURI(tokenId, URILibrary._buildURI(tokenId, tiers[nextTier]));
     }
 
     function handleRenewFail(uint256 tokenId) external {
-        address owner = ownerOf(tokenId);
+        address owner = token.ownerOf(tokenId);
         User storage user = accounts[owner];
         require(user.accountAddress != address(0), "GHOTunes: Account does not exist");
         require(msg.sender == user.accountAddress || msg.sender == owner, "GHOTunes: Only Account or Owner can renew");
 
         address upkeepAddress = user.upkeepDetails.upkeepAddress;
-        CronUpkeep upkeep = CronUpkeep(payable(upkeepAddress));
+        ICronUpkeep upkeep = ICronUpkeep(upkeepAddress);
         upkeep.pause();
 
         user.currentTier = 0;
         user.nextTier = 0;
         user.validUntil = type(uint256).max;
-        _setTokenURI(tokenId, _buildURI(tokenId, 0));
-    }
-
-    // The following functions are overrides required by Solidity.
-
-    function pause() public onlyOwner {
-        _pause();
-    }
-
-    function unpause() public onlyOwner {
-        _unpause();
-    }
-
-    function _update(
-        address to,
-        uint256 tokenId,
-        address auth
-    )
-        internal
-        override(ERC721, ERC721Pausable)
-        returns (address)
-    {
-        return super._update(to, tokenId, auth);
-    }
-
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-        return super.tokenURI(tokenId);
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage) returns (bool) {
-        return super.supportsInterface(interfaceId);
+        token.setTokenURI(tokenId, URILibrary._buildURI(tokenId, tiers[0]));
     }
 }

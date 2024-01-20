@@ -18,6 +18,7 @@ import { GHOTunes } from "../GhoTunes.sol";
 
 interface IAccount {
     function performUpkeep() external;
+    function initialize(address _forwarder, address _tunes) external;
 }
 
 contract GHOTunesAccount is IAccount, IERC165, IERC1271, IERC6551Account, IERC6551Executable {
@@ -27,6 +28,7 @@ contract GHOTunesAccount is IAccount, IERC165, IERC1271, IERC6551Account, IERC65
     IPool public aavePool = IPool(address(AaveV3Sepolia.POOL));
 
     address public forwarder;
+    address public tunes;
 
     event RenewSuccess(uint256 tokenId);
 
@@ -40,18 +42,19 @@ contract GHOTunesAccount is IAccount, IERC165, IERC1271, IERC6551Account, IERC65
         _;
     }
 
-    function initialize(address _forwarder) external onlyOnce {
+    function initialize(address _forwarder, address _tunes) external onlyOnce {
         require(_forwarder != address(0), "GHOTunesAccount: invalid forwarder");
         forwarder = _forwarder;
+        tunes = _tunes;
     }
 
     function performUpkeep() external onlyForwarder {
         (, address tokenContract, uint256 tokenId) = token();
-        GHOTunes tunes = GHOTunes(tokenContract);
-        try tunes.renew(tokenId) {
+        GHOTunes ghoTunes = GHOTunes(tunes);
+        try ghoTunes.renew(tokenId) {
             emit RenewSuccess(tokenId);
         } catch {
-            tunes.handleRenewFail(tokenId);
+            ghoTunes.handleRenewFail(tokenId);
         }
     }
 

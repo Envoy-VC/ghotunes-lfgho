@@ -8,11 +8,12 @@ import { console2 as console } from "forge-std/src/console2.sol";
 
 // Contracts
 import { GHOTunes } from "../src/GHOTunes.sol";
-import { IGhoTunes } from "../src/interfaces/IGhoTunes.sol";
+import "../src/interfaces/IGhoTunes.sol";
 
 import { SigUtils } from "../src/utils/SigUtils.sol";
 import { AccountRegistry } from "../src/accounts/AccountRegistry.sol";
 import { GHOTunesAccount } from "../src/accounts/Account.sol";
+import { Token } from "../src/token/Token.sol";
 
 // Aave V3 Contracts
 import { IPool } from "@aave/core-v3/contracts/interfaces/IPool.sol";
@@ -28,6 +29,7 @@ contract GHOTunesTest is Test {
     AccountRegistry public accountRegistry;
     GHOTunesAccount public implementation;
     IGhoToken public ghoToken = IGhoToken(address(AaveV3SepoliaAssets.GHO_UNDERLYING));
+    Token public token;
 
     DebtTokenBase public vWETH;
     DebtTokenBase public vGHO;
@@ -55,14 +57,17 @@ contract GHOTunesTest is Test {
         vWETH = DebtTokenBase(AaveV3SepoliaAssets.WETH_V_TOKEN);
         vGHO = DebtTokenBase(AaveV3SepoliaAssets.GHO_V_TOKEN);
 
-        IGhoTunes.TIER[] memory tiers = new GHOTunes.TIER[](3);
-        tiers[0] = IGhoTunes.TIER({ name: "Free", image: "bronze.png", price: 0 ether }); // Free
-        tiers[1] = IGhoTunes.TIER({ name: "Silver", image: "silverImage.png", price: 5 ether }); // 5 GHO
-        tiers[2] = IGhoTunes.TIER({ name: "Gold", image: "goldImage.png", price: 10 ether }); // 10 GHO
+        TIER[] memory tiers = new TIER[](3);
+        tiers[0] = TIER({ name: "Free", image: "bronze.png", price: 0 ether }); // Free
+        tiers[1] = TIER({ name: "Silver", image: "silverImage.png", price: 5 ether }); // 5 GHO
+        tiers[2] = TIER({ name: "Gold", image: "goldImage.png", price: 10 ether }); // 10 GHO
 
-        tunes = new GHOTunes(owner.addr, address(accountRegistry), address(implementation), tiers);
-
+        token = new Token(owner.addr);
+        tunes = new GHOTunes(address(accountRegistry), address(implementation), tiers, address(token));
+        token.setTunes(address(tunes));
         vm.stopPrank();
+
+        // Send Some LINK Tokens to Tunes
         vm.startPrank(0xBF4979305B43B0eB5Bb6a5C67ffB89408803d3e1);
         (bool success,) = address(0x779877A7B0D9E8603169DdbD7836e478b4624789).call(
             abi.encodeWithSignature("transfer(address,uint256)", address(tunes), 10 ether)
@@ -83,25 +88,25 @@ contract GHOTunesTest is Test {
         console.log("");
 
         uint256 DURATION_IN_MONTHS = 12;
-        //uint256 ethRequired = tunes.calculateETHRequired(1);
+        // uint256 ethRequired = tunes.calculateETHRequired(1);
 
         // Get Signatures
-        GHOTunes.Signature memory wETHPermit =
+        Signature memory wETHPermit =
             generatePermitSignature(vWETH, user1.addr, address(AaveV3Sepolia.WETH_GATEWAY), 1 ether);
 
         (,, uint256 amount) = tunes.tiers(1);
-        GHOTunes.Signature memory ghoPermit =
+        Signature memory ghoPermit =
             generatePermitSignature(vGHO, user1.addr, address(tunes), amount * DURATION_IN_MONTHS);
 
         console.log("GHO Balance of Contract: ", ghoToken.balanceOf(address(tunes)) / 1e18, "GHO");
 
         tunes.subscribeWithETH{ value: 1 ether }(user1.addr, 1, DURATION_IN_MONTHS, wETHPermit, ghoPermit);
 
-        (uint8 c,, address a, uint256 v, IGhoTunes.UpkeepDetails memory details) = tunes.accounts(user1.addr);
+        (uint8 c,, address a, uint256 v, UpkeepDetails memory details) = tunes.accounts(user1.addr);
         console.log("");
         console.log("========= Subscribing =========");
         console.log("");
-        console.log("Mint NFT with tokenId: ", tunes._nextTokenId() - 1);
+        console.log("Mint NFT with tokenId: ", token._nextTokenId() - 1);
         console.log("Created ERC-6551 Account: ", a);
         (string memory cName,,) = tunes.tiers(c);
         console.log("Current Tier: ", cName);
@@ -204,16 +209,16 @@ contract GHOTunesTest is Test {
     }
 
     function generatePermitSignature(
-        DebtTokenBase token,
+        DebtTokenBase _token,
         address delegator,
         address delegatee,
         uint256 value
     )
         public
-        returns (GHOTunes.Signature memory)
+        returns (Signature memory)
     {
-        SigUtils sigUtils = new SigUtils(token.DOMAIN_SEPARATOR(), token.DELEGATION_WITH_SIG_TYPEHASH());
-        uint256 nonce = token.nonces(delegator);
+        SigUtils sigUtils = new SigUtils(_token.DOMAIN_SEPARATOR(), _token.DELEGATION_WITH_SIG_TYPEHASH());
+        uint256 nonce = _token.nonces(delegator);
         uint256 deadline = block.timestamp + 1 days;
 
         SigUtils.Permit memory permit =
@@ -222,7 +227,7 @@ contract GHOTunesTest is Test {
         bytes32 digest = sigUtils.getTypedDataHash(permit);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(user1.privateKey, digest);
-        GHOTunes.Signature memory sig = IGhoTunes.Signature({ deadline: deadline, v: v, r: r, s: s });
+        Signature memory sig = Signature({ deadline: deadline, v: v, r: r, s: s });
 
         return sig;
     }
