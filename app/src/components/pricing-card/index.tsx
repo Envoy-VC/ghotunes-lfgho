@@ -1,30 +1,50 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 'use client';
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useContractWrite, useAccount } from 'wagmi';
+import { readContract } from '@wagmi/core';
+
+import { getCreditDelegationSignature } from '~/helpers/signature';
 
 import { Meteors } from '../meteor';
 
 import { FaCheck } from 'react-icons/fa6';
 
 import type { Tier } from '~/types';
-import { ABI } from '~/data/abi';
 
-const PricingCard = ({ name, description, price, features }: Tier) => {
+import { ABI, GHOTUNES_ADDRESS } from '~/data';
+
+const PricingCard = ({
+	name,
+	description,
+	price,
+	features,
+	index,
+}: Tier & { index: number }) => {
 	const { address } = useAccount();
+
 	const { write: subscribeWithETH } = useContractWrite({
-		address: '0x766EcD241899AbA389a999D01527afd7B55F999D',
+		address: GHOTUNES_ADDRESS,
 		abi: ABI,
 		functionName: 'subscribeWithETH',
 	});
 
 	const router = useRouter();
-	const onClick = () => {
+	const onClick = async () => {
+		if (!address) return;
 		if (price === 0) {
 			void router.push('/browse');
 		}
+		const ethPrice = await readContract({
+			address: GHOTUNES_ADDRESS,
+			abi: ABI,
+			functionName: 'calculateETHRequired',
+			args: [BigInt(index)],
+		});
 	};
 
 	return (

@@ -260,3 +260,27 @@ export const ABI = [
 		stateMutability: 'nonpayable',
 	},
 ] as const;
+
+export const EIP712_ABI = [
+	{
+		type: 'function',
+		name: 'DOMAIN_SEPARATOR',
+		inputs: [],
+		outputs: [{ name: '', type: 'bytes32', internalType: 'bytes32' }],
+		stateMutability: 'view',
+	},
+	{
+		type: 'function',
+		name: 'EIP712_REVISION',
+		inputs: [],
+		outputs: [{ name: '', type: 'bytes', internalType: 'bytes' }],
+		stateMutability: 'view',
+	},
+	{
+		type: 'function',
+		name: 'nonces',
+		inputs: [{ name: 'owner', type: 'address', internalType: 'address' }],
+		outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+		stateMutability: 'view',
+	},
+] as const;

@@ -11,10 +11,12 @@
 	},
 	"dependencies": {
 		"@t3-oss/env-nextjs": "^0.7.3",
+		"@wagmi/core": "^1",
 		"@zerodev/wagmi": "4.1.6",
 		"axios": "^1.6.5",
 		"clsx": "^2.1.0",
 		"connectkit": "1.5.3",
+		"ethers": "v5",
 		"framer-motion": "^10.18.0",
 		"next": "^14.0.4",
 		"react": "18.2.0",

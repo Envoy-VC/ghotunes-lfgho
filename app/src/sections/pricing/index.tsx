@@ -16,7 +16,7 @@ const Pricing = () => {
 				</div>
 				<div className='flex w-full max-w-screen-xl flex-row items-center gap-6'>
 					{tiers.map((tier, index) => (
-						<PricingCard key={index} {...tier} />
+						<PricingCard key={index} {...tier} index={index} />
 					))}
 				</div>
 			</div>

@@ -62,7 +62,6 @@ const config = createConfig(
 interface Props {
 	children: React.ReactNode;
 }
-
 const Web3Provider = ({ children }: Props) => {
 	return (
 		<WagmiConfig config={config}>
