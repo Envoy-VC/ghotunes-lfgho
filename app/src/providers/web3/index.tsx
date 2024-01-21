@@ -5,7 +5,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 'use client';
 
-import { WagmiConfig, createConfig } from 'wagmi';
+import { WagmiConfig, createConfig, configureChains } from 'wagmi';
+import { publicProvider } from 'wagmi/providers/public';
+import { alchemyProvider } from 'wagmi/providers/alchemy';
+
 import { supportedSocialConnectors } from '@zerodev/wagmi/connectkit';
 import {
 	supportedConnectors,
@@ -26,7 +29,10 @@ import {
 
 import { env } from '~/env';
 
-const chains = [sepolia];
+const { chains, publicClient, webSocketPublicClient } = configureChains(
+	[sepolia],
+	[alchemyProvider({ apiKey: env.NEXT_PUBLIC_ALCHEMY_KEY }), publicProvider()]
+);
 
 const defaultConnectors = [
 	...getDefaultConnectors({
@@ -56,6 +62,7 @@ const config = createConfig(
 			new TwitterSocialWalletConnector(options),
 			...otherConnectors,
 		],
+		publicClient,
 	})
 );
 
