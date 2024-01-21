@@ -1,7 +1,9 @@
-import { readContract, signTypedData } from '@wagmi/core';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { readContract, signTypedData, readContracts } from '@wagmi/core';
 import { hexToSignature } from 'viem';
 
-import { EIP712_ABI } from '~/data';
+import { DEBT_TOKEN_ABI } from '~/data';
 
 interface Props {
 	owner: string;
@@ -18,25 +20,58 @@ export const getCreditDelegationSignature = async ({
 	asset,
 	deadline,
 }: Props) => {
-	const nonce = await readContract({
+	const contract = {
 		address: asset as `0x${string}`,
-		abi: EIP712_ABI,
-		functionName: 'nonces',
-		args: [owner as `0x${string}`],
+		abi: DEBT_TOKEN_ABI,
+	};
+
+	const data = await readContracts({
+		contracts: [
+			{
+				...contract,
+				functionName: 'nonces',
+				args: [owner as `0x${string}`],
+			},
+			{
+				...contract,
+				functionName: 'EIP712_REVISION',
+			},
+			{
+				...contract,
+				functionName: 'name',
+			},
+		],
 	});
 
-	const name = 'Aave Ethereum Variable Debt WETH' as const;
+	const [nonce, revision, tokenName] = [
+		data[0].result,
+		data[1].result,
+		data[2].result,
+	];
+	console.log({
+		nonce,
+		revision,
+		tokenName,
+	});
+	if (nonce === undefined) throw new Error('Failed to get nonce');
+	if (revision === undefined) throw new Error('Failed to get revision');
+	if (tokenName === undefined) throw new Error('Failed to get token name');
+
+	const revisionHex = revision.slice(2);
+	const version = String(parseInt(revisionHex, 16));
+
+	console.log(version);
 
 	const domain = {
-		name: name,
+		name: tokenName,
 		version: '1',
-		chainId: BigInt(11155111),
+		chainId: 11155111,
 		verifyingContract: asset as `0x${string}`,
 	} as const;
 
 	const sig = await signTypedData({
 		types,
-		domain,
+		domain: domain as any,
 		primaryType: 'DelegationWithSig',
 		message: {
 			delegatee: spender as `0x${string}`,

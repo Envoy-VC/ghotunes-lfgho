@@ -284,3 +284,107 @@ export const EIP712_ABI = [
 		stateMutability: 'view',
 	},
 ] as const;
+
+export const DEBT_TOKEN_ABI = [
+	{
+		type: 'function',
+		name: 'DELEGATION_WITH_SIG_TYPEHASH',
+		inputs: [],
+		outputs: [{ name: '', type: 'bytes32', internalType: 'bytes32' }],
+		stateMutability: 'view',
+	},
+	{
+		type: 'function',
+		name: 'DOMAIN_SEPARATOR',
+		inputs: [],
+		outputs: [{ name: '', type: 'bytes32', internalType: 'bytes32' }],
+		stateMutability: 'view',
+	},
+	{
+		type: 'function',
+		name: 'EIP712_REVISION',
+		inputs: [],
+		outputs: [{ name: '', type: 'bytes', internalType: 'bytes' }],
+		stateMutability: 'view',
+	},
+	{
+		type: 'function',
+		name: 'approveDelegation',
+		inputs: [
+			{ name: 'delegatee', type: 'address', internalType: 'address' },
+			{ name: 'amount', type: 'uint256', internalType: 'uint256' },
+		],
+		outputs: [],
+		stateMutability: 'nonpayable',
+	},
+	{
+		type: 'function',
+		name: 'borrowAllowance',
+		inputs: [
+			{ name: 'fromUser', type: 'address', internalType: 'address' },
+			{ name: 'toUser', type: 'address', internalType: 'address' },
+		],
+		outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+		stateMutability: 'view',
+	},
+	{
+		type: 'function',
+		name: 'delegationWithSig',
+		inputs: [
+			{ name: 'delegator', type: 'address', internalType: 'address' },
+			{ name: 'delegatee', type: 'address', internalType: 'address' },
+			{ name: 'value', type: 'uint256', internalType: 'uint256' },
+			{ name: 'deadline', type: 'uint256', internalType: 'uint256' },
+			{ name: 'v', type: 'uint8', internalType: 'uint8' },
+			{ name: 'r', type: 'bytes32', internalType: 'bytes32' },
+			{ name: 's', type: 'bytes32', internalType: 'bytes32' },
+		],
+		outputs: [],
+		stateMutability: 'nonpayable',
+	},
+	{
+		type: 'function',
+		name: 'nonces',
+		inputs: [{ name: 'owner', type: 'address', internalType: 'address' }],
+		outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+		stateMutability: 'view',
+	},
+	{
+		type: 'event',
+		name: 'BorrowAllowanceDelegated',
+		inputs: [
+			{
+				name: 'fromUser',
+				type: 'address',
+				indexed: true,
+				internalType: 'address',
+			},
+			{
+				name: 'toUser',
+				type: 'address',
+				indexed: true,
+				internalType: 'address',
+			},
+			{
+				name: 'asset',
+				type: 'address',
+				indexed: true,
+				internalType: 'address',
+			},
+			{
+				name: 'amount',
+				type: 'uint256',
+				indexed: false,
+				internalType: 'uint256',
+			},
+		],
+		anonymous: false,
+	},
+	{
+		inputs: [],
+		name: 'name',
+		outputs: [{ internalType: 'string', name: '', type: 'string' }],
+		stateMutability: 'view',
+		type: 'function',
+	},
+] as const;

@@ -10,6 +10,7 @@
 		"start": "next start"
 	},
 	"dependencies": {
+		"@bgd-labs/aave-address-book": "^2.17.0",
 		"@t3-oss/env-nextjs": "^0.7.3",
 		"@wagmi/core": "^1",
 		"@zerodev/wagmi": "4.1.6",

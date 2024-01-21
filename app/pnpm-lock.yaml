@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@bgd-labs/aave-address-book':
+    specifier: ^2.17.0
+    version: 2.17.0
   '@t3-oss/env-nextjs':
     specifier: ^0.7.3
     version: 0.7.3(typescript@5.3.3)(zod@3.22.4)
@@ -396,6 +399,10 @@ packages:
       '@babel/helper-string-parser': 7.23.4
       '@babel/helper-validator-identifier': 7.22.20
       to-fast-properties: 2.0.0
+    dev: false
+
+  /@bgd-labs/aave-address-book@2.17.0:
+    resolution: {integrity: sha512-JhKGyaCm6Qg+0jtX3UiNNi7c8+vYqFp8gbAsgMnxMZhDOEoNo4gPtiEq9M9rFl1PwjSEdMyzoRcP/nquFPC52g==}
     dev: false
 
   /@coinbase/wallet-sdk@3.7.2:

@@ -15,8 +15,10 @@ import { Meteors } from '../meteor';
 import { FaCheck } from 'react-icons/fa6';
 
 import type { Tier } from '~/types';
+import { AaveV3Sepolia } from '@bgd-labs/aave-address-book'; // import specific pool
 
 import { ABI, GHOTUNES_ADDRESS } from '~/data';
+import { parseEther } from 'viem';
 
 const PricingCard = ({
 	name,
@@ -44,6 +46,29 @@ const PricingCard = ({
 			abi: ABI,
 			functionName: 'calculateETHRequired',
 			args: [BigInt(index)],
+		});
+
+		const deadline = Math.floor(Date.now() / 1000) + 24 * 60 * 60 * 60;
+
+		const sig1 = await getCreditDelegationSignature({
+			owner: address,
+			asset: AaveV3Sepolia.ASSETS.WETH.V_TOKEN,
+			spender: AaveV3Sepolia.WETH_GATEWAY,
+			amount: BigInt(ethPrice),
+			deadline: BigInt(deadline),
+		});
+
+		const sig2 = await getCreditDelegationSignature({
+			owner: address,
+			asset: AaveV3Sepolia.ASSETS.GHO.V_TOKEN,
+			spender: GHOTUNES_ADDRESS,
+			amount: parseEther(price.toString()),
+			deadline: BigInt(deadline),
+		});
+
+		subscribeWithETH({
+			value: ethPrice,
+			args: [address, 1, BigInt(1), sig1, sig2],
 		});
 	};
 
