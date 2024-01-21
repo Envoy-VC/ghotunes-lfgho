@@ -23,8 +23,8 @@ export const tiers: Tier[] = [
 		features: [
 			'Unlimited Music',
 			'No Ads',
-			'No Offline Mode',
-			'High Quality Audio',
+			'Offline Mode',
+			'No High Quality Audio',
 		],
 	},
 	{

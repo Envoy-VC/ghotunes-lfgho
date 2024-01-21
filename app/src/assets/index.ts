@@ -6,6 +6,7 @@ import BackgroundImage5 from './background5.jpeg';
 import BackgroundImage6 from './background6.jpeg';
 import BackgroundImage7 from './background7.jpeg';
 import MusicPlaceholder from './music.png';
+import GHOLogo from './ghologo.jpeg';
 
 const backgroundImages = [
 	BackgroundImage1.src,
@@ -17,4 +18,4 @@ const backgroundImages = [
 	BackgroundImage7.src,
 ];
 
-export { backgroundImages, MusicPlaceholder };
+export { backgroundImages, MusicPlaceholder, GHOLogo };
