@@ -4,6 +4,8 @@ import React from 'react';
 import { Dialog, DialogContent, DialogTrigger } from '~/components/ui/dialog';
 import { Button } from '~/components/ui/button';
 
+import { useRouter } from 'next/navigation';
+
 import { useContractWrite, useAccount } from 'wagmi';
 import { parseEther } from 'viem';
 import { readContract } from '@wagmi/core';
@@ -12,7 +14,7 @@ import { AaveV3Sepolia } from '@bgd-labs/aave-address-book';
 import { getCreditDelegationSignature } from '~/helpers/signature';
 
 import { tierImages, GHOLogo } from '~/assets';
-import { ABI, GHOTUNES_ADDRESS } from '~/data';
+import { ABI, GHOTUNES_ADDRESS, GHOTUNES_ABI } from '~/data';
 
 import type { Tier } from '~/types';
 import Image from 'next/image';
@@ -33,15 +35,34 @@ interface Signature {
 
 const SubscribeModal = ({ index, name, price }: Props) => {
 	const { address } = useAccount();
+	const router = useRouter();
 	const { writeAsync: subscribeWithETH } = useContractWrite({
 		address: GHOTUNES_ADDRESS,
 		abi: ABI,
 		functionName: 'subscribeWithETH',
 	});
 
+	const [open, setOpen] = React.useState<boolean>(false);
+
 	const [wETHSig, setWETHSig] = React.useState<Signature | null>(null);
 	const [gHOSig, setGHOSig] = React.useState<Signature | null>(null);
 	const [hash, setHash] = React.useState<string>('');
+
+	const [currentTier, setCurrentTier] = React.useState<number>(0);
+
+	React.useEffect(() => {
+		const get = async () => {
+			if (!address) return;
+			const res = await readContract({
+				address: GHOTUNES_ADDRESS,
+				abi: GHOTUNES_ABI,
+				functionName: 'accounts',
+				args: [address],
+			});
+			setCurrentTier(res[0]);
+		};
+		void get();
+	}, [address]);
 
 	const onWETH = async () => {
 		if (wETHSig) return;
@@ -117,12 +138,30 @@ const SubscribeModal = ({ index, name, price }: Props) => {
 		}
 	};
 
+	const goTo = () => {
+		if (currentTier >= index || price === 0) {
+			router.push('/browse');
+		}
+	};
+
 	return (
 		<div className='dark w-full'>
-			<Dialog>
-				<DialogTrigger asChild>
-					<Button className='mt-8 w-full'>
-						{price === 0 ? 'Go to App' : 'Subscribe'}
+			<Dialog
+				open={open}
+				onOpenChange={(open) => {
+					if (price === 0 || currentTier >= index) return;
+					setOpen(open);
+				}}
+			>
+				<DialogTrigger
+					asChild
+					onClick={() => {
+						if (price === 0 || currentTier >= index) return;
+						setOpen(true);
+					}}
+				>
+					<Button className='mt-8 w-full' onClick={goTo}>
+						{price === 0 || currentTier >= index ? 'Go to App' : 'Subscribe'}
 					</Button>
 				</DialogTrigger>
 				<DialogContent className='dark max-w-lg'>

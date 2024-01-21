@@ -1,6 +1,6 @@
 import type { Tier } from '~/types';
-import { ABI, EIP712_ABI, DEBT_TOKEN_ABI } from './abi';
-export { ABI, EIP712_ABI, DEBT_TOKEN_ABI };
+import { ABI, EIP712_ABI, DEBT_TOKEN_ABI, GHOTUNES_ABI } from './abi';
+export { ABI, EIP712_ABI, DEBT_TOKEN_ABI, GHOTUNES_ABI };
 
 export const GHOTUNES_ADDRESS = '0x766EcD241899AbA389a999D01527afd7B55F999D';
 
