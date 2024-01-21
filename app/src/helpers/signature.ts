@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { readContract, signTypedData, readContracts } from '@wagmi/core';
+import { signTypedData, readContracts } from '@wagmi/core';
 import { hexToSignature } from 'viem';
 
 import { DEBT_TOKEN_ABI } from '~/data';

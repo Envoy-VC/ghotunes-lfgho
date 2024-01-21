@@ -2,15 +2,15 @@ import React from 'react';
 import Image from 'next/image';
 import { Navbar } from '~/components';
 
-import { Pricing } from '~/sections';
+import { Subscribe } from '~/sections';
 
-const Home = () => {
+const SubscribePage = () => {
 	return (
 		<div className='h-screen bg-black/95 text-white'>
 			<Navbar />
-			<Pricing />
+			<Subscribe />
 		</div>
 	);
 };
 
-export default Home;
+export default SubscribePage;

@@ -3,7 +3,7 @@ import React from 'react';
 import PricingCard from '~/components/pricing-card';
 import { tiers } from '~/data';
 
-const Pricing = () => {
+const Subscribe = () => {
 	return (
 		<div id='pricing' className='absolute top-0 h-full w-full'>
 			<div className='flex h-full w-full flex-col items-center justify-center gap-8'>
@@ -24,4 +24,4 @@ const Pricing = () => {
 	);
 };
 
-export default Pricing;
+export default Subscribe;

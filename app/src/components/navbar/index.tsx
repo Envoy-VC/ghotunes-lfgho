@@ -22,10 +22,10 @@ const Navbar = () => {
 			<div className='flex items-center gap-5'>
 				{pathname !== '/browse' && (
 					<Link
-						href='/pricing'
+						href='/subscribe'
 						className='z-[100] rounded-xl bg-slate-50 px-4 py-[6px] font-bold uppercase text-[#61615F]'
 					>
-						Pricing
+						subscribe
 					</Link>
 				)}
 				<div className='z-[100]'>

@@ -1,4 +1,5 @@
-import Pricing from './pricing';
+import Subscribe from './subscribe';
 import TrendingPlaylists from './trending-playlists';
 import TopCharts from './top-charts';
-export { Pricing, TrendingPlaylists, TopCharts };
+
+export { Subscribe, TrendingPlaylists, TopCharts };
