@@ -3,10 +3,13 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
-import { useContractWrite, useAccount } from 'wagmi';
+import { parseEther } from 'viem';
 import { readContract } from '@wagmi/core';
+import { useContractWrite, useAccount } from 'wagmi';
+import { AaveV3Sepolia } from '@bgd-labs/aave-address-book';
 
 import { getCreditDelegationSignature } from '~/helpers/signature';
 
@@ -15,12 +18,10 @@ import { Meteors } from '../meteor';
 import { FaCheck } from 'react-icons/fa6';
 
 import type { Tier } from '~/types';
-import { AaveV3Sepolia } from '@bgd-labs/aave-address-book'; // import specific pool
 
 import { ABI, GHOTUNES_ADDRESS } from '~/data';
-import { parseEther } from 'viem';
-import Image from 'next/image';
 import { GHOLogo } from '~/assets';
+import SubscribeModal from '../subscribe-modal';
 
 const PricingCard = ({
 	name,
@@ -102,14 +103,14 @@ const PricingCard = ({
 						</div>
 					))}
 				</div>
-				<button
-					className='mt-8 w-full rounded-xl bg-zinc-200 px-8 py-3 font-semibold text-black/80 transition-all duration-300 ease-in-out hover:bg-zinc-300'
-					type='button'
-					onClick={onClick}
-				>
-					{price === 0 ? 'Go to App' : 'Subscribe'}
-				</button>
 				<Meteors />
+				<SubscribeModal
+					name={name}
+					description={description}
+					price={price}
+					features={features}
+					index={index}
+				/>
 			</div>
 		</div>
 	);
