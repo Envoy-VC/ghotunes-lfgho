@@ -19,7 +19,7 @@ GHO Tunes uses Audius, a decentralized music platform that curates and hosts ind
 
 Currently there are three Subscription Tiers:
 
-1. **Free**: GHO Tokens per month
+1. **Free**: 0 GHO Tokens per month
 2. **Silver**: 5 GHO Tokens per month
 3. **Gold**: 10 GHO Tokens per month
 
@@ -130,6 +130,10 @@ And when the upkeep runs, the subscription amount is updated based on the new ti
 </table>
 
 ---
+
+## Demo Video 📺
+
+https://stream.mux.com/lGKB2oGze8vTVE3Inx5QUkg02F02lbPf7RPOKryFBmJAE/high.mp4
 
 ## How to run the project locally
 
