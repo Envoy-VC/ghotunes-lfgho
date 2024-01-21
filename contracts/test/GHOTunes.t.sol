@@ -76,10 +76,7 @@ contract GHOTunesTest is Test {
         vm.stopPrank();
     }
 
-    function test_a() external {
-    }
-
-    function est_depositAndSubscribe() external {
+    function test_depositAndSubscribe() external {
         vm.startPrank(user1.addr);
         vm.deal(user1.addr, 100 ether);
 
