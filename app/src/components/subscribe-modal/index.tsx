@@ -17,6 +17,9 @@ import { ABI, GHOTUNES_ADDRESS } from '~/data';
 import type { Tier } from '~/types';
 import Image from 'next/image';
 
+import { FaCircleCheck } from 'react-icons/fa6';
+import Link from 'next/link';
+
 interface Props extends Tier {
 	index: number;
 }
@@ -30,7 +33,7 @@ interface Signature {
 
 const SubscribeModal = ({ index, name, price }: Props) => {
 	const { address } = useAccount();
-	const { write: subscribeWithETH } = useContractWrite({
+	const { writeAsync: subscribeWithETH } = useContractWrite({
 		address: GHOTUNES_ADDRESS,
 		abi: ABI,
 		functionName: 'subscribeWithETH',
@@ -38,8 +41,10 @@ const SubscribeModal = ({ index, name, price }: Props) => {
 
 	const [wETHSig, setWETHSig] = React.useState<Signature | null>(null);
 	const [gHOSig, setGHOSig] = React.useState<Signature | null>(null);
+	const [hash, setHash] = React.useState<string>('');
 
 	const onWETH = async () => {
+		if (wETHSig) return;
 		try {
 			if (!address) {
 				throw new Error('No address');
@@ -66,6 +71,7 @@ const SubscribeModal = ({ index, name, price }: Props) => {
 		}
 	};
 	const onGHO = async () => {
+		if (gHOSig) return;
 		try {
 			if (!address) {
 				throw new Error('No address');
@@ -100,10 +106,12 @@ const SubscribeModal = ({ index, name, price }: Props) => {
 				args: [BigInt(index)],
 			});
 
-			subscribeWithETH({
+			const res = await subscribeWithETH({
 				value: ethPrice,
 				args: [address, 1, BigInt(1), wETHSig, gHOSig],
 			});
+
+			setHash(res.hash);
 		} catch (error) {
 			console.log(error);
 		}
@@ -129,22 +137,54 @@ const SubscribeModal = ({ index, name, price }: Props) => {
 						<div className='w-full'>
 							<div className='flex flex-col gap-3'>
 								<Button className='w-full' onClick={onWETH}>
-									Credit Delegate WETH
+									{wETHSig === null ? (
+										'Credit Delegate WETH'
+									) : (
+										<FaCircleCheck className='text-2xl text-[#C9B3FE]' />
+									)}
 								</Button>
 								<Button
 									className='w-full'
 									disabled={wETHSig === null}
 									onClick={onGHO}
 								>
-									Credit Delegate GHO
+									{gHOSig === null ? (
+										'Credit Delegate GHO'
+									) : (
+										<FaCircleCheck className='text-2xl text-[#C9B3FE]' />
+									)}
 								</Button>
 								<Button
 									className='w-full'
 									onClick={onSubscribe}
 									disabled={wETHSig === null || gHOSig === null}
 								>
-									Subscribe
+									{hash === '' ? (
+										<div className='flex flex-row items-center gap-2'>
+											<div className='text-lg'>PAY {price}</div>
+											<Image
+												src={GHOLogo}
+												alt='GHO'
+												width={32}
+												height={32}
+												className='rounded-full'
+											/>
+										</div>
+									) : (
+										<FaCircleCheck className='text-2xl text-[#C9B3FE]' />
+									)}
 								</Button>
+								<div className='text-center text-[#C9B3FE]'>
+									{hash && (
+										<Link
+											href={`https://sepolia.etherscan.io/tx/${hash}`}
+											target='_blank'
+											rel='noreferrer'
+										>
+											View on Etherscan
+										</Link>
+									)}
+								</div>
 							</div>
 						</div>
 					</div>

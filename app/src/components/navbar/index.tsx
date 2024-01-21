@@ -12,7 +12,7 @@ const Navbar = () => {
 		<div className='z-[100] flex h-[10dvh] items-center justify-between px-8'>
 			<Link
 				className={clsx(
-					'z-[100] font-boldFont  text-4xl tracking-wide',
+					'z-[100] font-boldFont  tracking-wide md:text-4xl',
 					pathname === '/browse' ? 'text-gray-700' : 'text-gray-100'
 				)}
 				href='/'

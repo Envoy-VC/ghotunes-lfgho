@@ -18,6 +18,9 @@ const config = {
 			},
 		},
 		extend: {
+			fontFamily: {
+				boldFont: ['Bold Font', 'sans-serif'],
+			},
 			keyframes: {
 				'accordion-down': {
 					from: { height: '0' },
